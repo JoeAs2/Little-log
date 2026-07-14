@@ -98,7 +98,7 @@
   .since-value { font-size: 19px; font-weight: 800; }
   .since-time { font-size: 10.5px; color: var(--ink-soft); }
 
-  .body { flex: 1; overflow-y: auto; padding-bottom: 90px; }
+  .body { flex: 1; overflow-y: auto; padding-bottom: 12px; }
   .pad { padding: 16px; }
 
   .card {
@@ -171,8 +171,8 @@
   .del-no { background: var(--line); color: var(--ink); border: none; border-radius: 8px; padding: 4px 6px; }
 
   .nav {
-    position: absolute; bottom: 0; left: 0; right: 0; display: flex;
-    background: var(--card); border-top: 1px solid var(--line); box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    display: flex; flex-shrink: 0; background: var(--card); border-top: 1px solid var(--line);
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 8;
   }
   .nav-btn {
     flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
@@ -215,6 +215,18 @@
   .day-cell.selected .day-dot { background: #fff; }
   .day-cell.birthday { background: var(--breast-soft); border-color: var(--breast); font-size: 14px; }
   .day-cell.birthday.selected { background: var(--breast); }
+  .day-cell.milestone { border-color: var(--formula); }
+  .day-cell.milestone .day-dot { background: var(--formula); }
+  .milestone-banner { margin-top: 10px; padding: 12px 14px; border-radius: 14px; background: rgba(255, 182, 56, 0.12); border: 1px solid rgba(255, 178, 56, 0.35); color: var(--ink); font-size: 13px; }
+  .weight-summary { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+  .weight-summary-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .weight-summary-label { color: var(--ink-soft); font-size: 13px; }
+  .weight-summary-value { font-weight: 800; font-size: 18px; }
+  .weight-history-title { font-weight: 700; margin-bottom: 10px; }
+  .weight-history-list { display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; }
+  .weight-history-list div { background: var(--line); border-radius: 10px; padding: 8px 10px; }
+  .confetti-piece { position: fixed; top: -20px; border-radius: 3px; opacity: 0.95; z-index: 9999; animation: confetti-fall linear forwards; }
+  @keyframes confetti-fall { to { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
   .day-nav { display: flex; align-items: center; justify-content: space-between; margin: 18px 0 10px; }
   .day-title { font-weight: 800; font-size: 16px; }
 
@@ -260,9 +272,29 @@
   .legend { display: flex; flex-direction: column; gap: 6px; }
   .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; }
   .legend-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .dev-block-card {
+    background: var(--card); border-radius: 18px; padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    margin-bottom: 16px;
+  }
+  .dev-row { display: flex; align-items: flex-start; gap: 8px; padding: 8px 0; }
+  .dev-row + .dev-row { border-top: 1px solid var(--line); }
+  .dev-row-icon { font-size: 16px; margin-top: 2px; }
+  .dev-header { font-weight: 800; font-size: 13.5px; color: var(--ink); margin-bottom: 2px; }
+  .dev-body-text { font-size: 13px; line-height: 1.45; color: var(--ink); }
+  .header-fact-banner {
+    margin-top: 12px; padding: 10px 12px; border-radius: 14px; background: rgba(255,255,255,0.72);
+    border: 1px solid rgba(255,255,255,0.85); box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+    color: var(--ink); font-size: 12.5px; line-height: 1.45; display: flex; align-items: flex-start; gap: 8px;
+    animation: factFloat 6s ease-in-out infinite;
+  }
+  .header-fact-icon { font-size: 15px; margin-top: 1px; }
+  @keyframes factFloat {
+    0%, 100% { transform: translateY(0); opacity: 0.95; }
+    50% { transform: translateY(-3px); opacity: 1; }
+  }
   .app-footer {
-    text-align: center; padding: 6px 12px 4px; font-size: 11px; color: var(--ink-soft);
-    opacity: 0.55; letter-spacing: 0.2px;
+    text-align: center; padding: 8px 12px 10px; font-size: 10.5px; color: var(--ink-soft);
+    letter-spacing: 0.2px; opacity: 0.8; background: transparent; pointer-events: none;
   }
   .app-footer .update-link {
     color: var(--breast); font-weight: 800; text-decoration: none; opacity: 1;
@@ -330,8 +362,12 @@ const EXPORT_KEY = "babyFeedLastExport";
 const FIREBASE_CONFIG_KEY = "babyFeedFirebaseConfig";
 const BIRTH_KEY = "babyBirthIso";
 const WEIGHTS_KEY = "babyWeights";
+const FACTS_KEY = "babyFeedFacts";
+const TOP_TIPS_KEY = "babyFeedTopTips";
+const BABY_NAME_KEY = "babyName";
+const BABY_PRONOUNS_KEY = "babyPronouns";
 const EXPORT_REMINDER_MS = 24 * 60 * 60 * 1000;
-const APP_VERSION = "2.3";
+const APP_VERSION = "2.5";
 
 const TYPE_META = {
   breast:  { label: "Breastmilk", emoji: "🤱", color: "#FF8A73", soft: "#FFE7E0" },
@@ -356,6 +392,72 @@ const ICONS = {
   x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
 };
 
+const DEVELOPMENT = [
+  { minDay: 0, maxDay: 6, title: "Week 1", text: "{name} may recognise familiar voices from before birth." },
+  { minDay: 7, maxDay: 13, title: "Week 2", text: "Tummy time is helping {name} strengthen {pronounPossessive} neck muscles." },
+  { minDay: 14, maxDay: 20, title: "Week 3", text: "{pronounSubject} may spend longer looking at your face." },
+  { minDay: 21, maxDay: 27, title: "Week 4", text: "High-pitched, rhythmic voices catch {pronounPossessive} interest." },
+  { minDay: 28, maxDay: 35, title: "Week 5", text: "Look out for that first social smile from {name}!" },
+  { minDay: 36, maxDay: 42, title: "Week 6", text: "{pronounSubject} is starting to track moving objects with {pronounPossessive} eyes." },
+  { minDay: 43, maxDay: 50, title: "Week 7", text: "Coos and gurgles are becoming more common for {name}." },
+  { minDay: 51, maxDay: 60, title: "Week 8", text: "{pronounSubject} might start reaching for your hair or jewellery." },
+  { minDay: 61, maxDay: 70, title: "Week 9", text: "Sleep patterns may begin to settle a little more for {name}." },
+  { minDay: 71, maxDay: 80, title: "Week 10", text: "{pronounSubject} is becoming more aware of {pronounPossessive} surroundings." },
+  { minDay: 81, maxDay: 90, title: "Week 11", text: "Try playing peek-a-boo with a soft cloth for {name}." },
+  { minDay: 91, maxDay: 100, title: "Week 12", text: "Hand discovery is in full swing for {name}!" },
+  { minDay: 101, maxDay: 110, title: "Week 13", text: "{pronounSubject} can now hold {pronounPossessive} head steady when upright." },
+  { minDay: 111, maxDay: 120, title: "Week 14", text: "{pronounSubject} is learning to roll from tummy to back." },
+  { minDay: 121, maxDay: 130, title: "Week 15", text: "Babbling experiments are getting louder from {name}." },
+  { minDay: 131, maxDay: 140, title: "Week 16", text: "{pronounSubject} is starting to recognise specific people." },
+  { minDay: 141, maxDay: 150, title: "Week 17", text: "Object permanence is beginning to develop for {name}." },
+  { minDay: 151, maxDay: 160, title: "Week 18", text: "Sitting with support is getting easier for {name}." },
+  { minDay: 161, maxDay: 170, title: "Week 19", text: "{pronounSubject} might start showing preferences for certain toys." },
+  { minDay: 171, maxDay: 365, title: "Week 20+", text: "Encourage exploration through sensory play with {name}." }
+];
+
+const DEFAULT_FACTS = [
+  "{name} has around 300 bones at birth.",
+  "{name} blinks only 1–2 times per minute as a newborn.",
+  "{pronounPossessive} eyes are about 75% of their adult size.",
+  "{name} is born with a natural swimming reflex.",
+  "{pronounPossessive} heart beats faster than an adult's.",
+  "{name} often prefers high-contrast patterns.",
+  "{name} can cry without tears for a few weeks.",
+  "{name} is born with an innate grasp reflex.",
+  "{pronounPossessive} sense of smell is highly developed at birth.",
+  "{name} has more taste buds than adults.",
+  "{pronounSubject} can distinguish {pronounPossessive} mother's scent.",
+  "{name} is nearsighted at birth and focuses best at about 8–12 inches.",
+  "{name} has a specialised rooting reflex for feeding.",
+  "{pronounSubject} sleeps on average 16 hours a day.",
+  "The soft spot on {pronounPossessive} head helps protect {pronounPossessive} brain.",
+  "{pronounSubject} can taste sweet, sour, and bitter.",
+  "{pronounPossessive} rapid growth means {pronounSubject} needs frequent feeds.",
+  "{name} communicates mostly through crying.",
+  "Skin-to-skin contact helps regulate {pronounPossessive} temperature.",
+  "{name} grows at {pronounPossessive} own pace, and every little milestone is special."
+];
+
+const AGE_FACTS = [
+  { minDay: 0, maxDay: 30, text: "{name} is born with around 300 bones, more than adults." },
+  { minDay: 14, maxDay: 45, text: "{name} can focus much better on faces than {pronounSubject} could a few weeks ago." },
+  { minDay: 30, maxDay: 60, text: "Many infants begin tracking moving objects more smoothly around 1 month old." },
+  { minDay: 60, maxDay: 90, text: "By 2 months, {name} may start smiling back when you smile at {pronounObject}." },
+  { minDay: 90, maxDay: 120, text: "At 3–4 months, {name} often enjoys reaching for toys with both hands." },
+  { minDay: 120, maxDay: 150, text: "Around 4–5 months, hand-to-mouth play becomes more frequent for {name}." },
+  { minDay: 150, maxDay: 210, text: "Many little ones show a lot more curiosity about textures and sounds in the first half year." },
+  { minDay: 210, maxDay: 365, text: "By the first birthday, {name} may recognise familiar routines and respond to {pronounPossessive} own name." },
+];
+
+const MILESTONES = [
+  { dayOffset: 0, title: "Birth day", icon: "🎂", text: "Welcome to the world!" },
+  { dayOffset: 30, title: "1 month", icon: "1️⃣", text: "One month already!" },
+  { dayOffset: 60, title: "2 months", icon: "🧡", text: "Two months of learning and cuddles." },
+  { dayOffset: 90, title: "3 months", icon: "🌼", text: "Three months of growing stronger each day." },
+  { dayOffset: 180, title: "6 months", icon: "🎉", text: "Half a year of tiny wins and big smiles." },
+  { dayOffset: 365, title: "1 year", icon: "🥳", text: "A whole year of firsts!" },
+];
+
 /* =========================================================================
    STATE
 ========================================================================= */
@@ -375,11 +477,20 @@ let state = {
   latestVersion: null,
   latestUrl: null,
   babyBirthIso: null,
+  babyName: "Emmy",
+  babyPronouns: "she",
   birthInputText: "",
   weights: [],
   weightDateInput: "",
   weightKgInput: "",
   weightNoteInput: "",
+  facts: [],
+  topTips: [],
+  dailyMessageKind: "fact",
+  headerFactIndex: 0,
+  footerFactIndex: 1,
+  topTipIndex: 0,
+  milestoneConfettiLast: null,
   form: {
     type: "breast",
     datetime: localInputValue(new Date()),
@@ -466,6 +577,45 @@ function formatAge(birthIso, atDate) {
   const weeks = Math.floor(totalDays / 7);
   const rem = totalDays % 7;
   return `${weeks} week${weeks===1?"":"s"} old${rem ? `, ${rem} day${rem===1?"":"s"}` : ""}`;
+}
+function getBabyProfile() {
+  const pronouns = (state.babyPronouns || "she").toLowerCase();
+  const normalized = pronouns === "he" ? "he" : pronouns === "they" ? "they" : "she";
+  return {
+    name: state.babyName || "Emmy",
+    pronoun: normalized,
+    possessive: normalized === "he" ? "his" : normalized === "they" ? "their" : "her",
+    object: normalized === "he" ? "him" : normalized === "they" ? "them" : "her",
+    reflexive: normalized === "he" ? "himself" : normalized === "they" ? "themself" : "herself",
+    possessiveName: `${state.babyName || "Emmy"}'s`
+  };
+}
+function getBabyName() { return getBabyProfile().name; }
+function getBabyNamePossessive() { return `${getBabyName()}'s`; }
+function getPersonalizedText(text) {
+  const profile = getBabyProfile();
+  if (!text || typeof text !== "string") return "";
+  let out = text
+    .replace(/\{name\}/g, profile.name)
+    .replace(/\{namePossessive\}/g, profile.possessiveName)
+    .replace(/\{pronounSubject\}/g, profile.pronoun)
+    .replace(/\{pronounPossessive\}/g, profile.possessive)
+    .replace(/\{pronounObject\}/g, profile.object)
+    .replace(/\{pronounReflexive\}/g, profile.reflexive);
+  out = out.replace(/\bNewborns\b/gi, profile.name);
+  out = out.replace(/\bBabies\b/gi, profile.name);
+  out = out.replace(/\bbabies\b/gi, profile.name);
+  out = out.replace(/\bBaby\b/gi, profile.name);
+  out = out.replace(/\bbaby\b/gi, profile.name);
+  out = out.replace(/\bher\b/gi, profile.possessive);
+  out = out.replace(/\bhis\b/gi, profile.possessive);
+  out = out.replace(/\btheir\b/gi, profile.possessive);
+  out = out.replace(/\bshe\b/gi, profile.pronoun);
+  out = out.replace(/\bhe\b/gi, profile.pronoun);
+  out = out.replace(/\bthey\b/gi, profile.pronoun);
+  out = out.replace(/\bcommunicate\b/gi, profile.pronoun === "they" ? "communicate" : "communicates");
+  out = out.replace(/\bcommunicates\b/gi, profile.pronoun === "they" ? "communicate" : "communicates");
+  return out;
 }
 // Approximate typical total daily milk intake (ml) by day of life.
 // Sourced from commonly-cited NHS / AAP / CDC style newborn feeding guidance.
@@ -625,6 +775,201 @@ function esc(s) {
   return d.innerHTML;
 }
 
+function loadFacts() {
+  try {
+    const raw = localStorage.getItem(FACTS_KEY);
+    if (!raw) return [...DEFAULT_FACTS];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter(Boolean) : [...DEFAULT_FACTS];
+  } catch (e) {
+    return [...DEFAULT_FACTS];
+  }
+}
+function loadTopTips() {
+  try {
+    const raw = localStorage.getItem(TOP_TIPS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveFacts(facts) {
+  try {
+    localStorage.setItem(FACTS_KEY, JSON.stringify(facts));
+  } catch (e) {
+    console.error("Could not save facts", e);
+  }
+}
+function saveTopTips(topTips) {
+  try {
+    localStorage.setItem(TOP_TIPS_KEY, JSON.stringify(topTips));
+  } catch (e) {
+    console.error("Could not save top tips", e);
+  }
+}
+
+function addFactFromInput() {
+  const input = document.getElementById("newFactInput");
+  const text = (input?.value || "").trim();
+  if (!text) return;
+
+  const parsedFacts = text
+    .split(",")
+    .map(item => item.trim())
+    .filter(Boolean);
+
+  if (parsedFacts.length === 0) return;
+
+  state.facts = [...parsedFacts, ...state.facts].filter(Boolean);
+  saveFacts(state.facts);
+  if (input) input.value = "";
+  shuffleFact();
+}
+function addTopTipFromInput() {
+  const input = document.getElementById("newTopTipInput");
+  const text = (input?.value || "").trim();
+  if (!text) return;
+
+  const parsedTips = text
+    .split(",")
+    .map(item => item.trim())
+    .filter(Boolean);
+
+  if (parsedTips.length === 0) return;
+
+  state.topTips = [...parsedTips, ...state.topTips].filter(Boolean);
+  saveTopTips(state.topTips);
+  if (input) input.value = "";
+  shuffleFact();
+}
+
+function pickDistinctFactIndices() {
+  if (!state.facts.length) return { header: 0, footer: 0 };
+  if (state.facts.length === 1) return { header: 0, footer: 0 };
+  let header = Math.floor(Math.random() * state.facts.length);
+  let footer = Math.floor(Math.random() * state.facts.length);
+  while (footer === header) {
+    footer = Math.floor(Math.random() * state.facts.length);
+  }
+  return { header, footer };
+}
+
+function initializeFactIndices() {
+  const picked = pickDistinctFactIndices();
+  state.headerFactIndex = picked.header;
+  state.footerFactIndex = picked.footer;
+  state.topTipIndex = 0;
+  state.dailyMessageKind = state.topTips.length && state.facts.length ? "fact" : state.topTips.length ? "tip" : "fact";
+}
+
+function rotateDailyMessage() {
+  if (!state.facts.length && !state.topTips.length) return;
+  if (state.facts.length && state.topTips.length) {
+    state.dailyMessageKind = state.dailyMessageKind === "fact" ? "tip" : "fact";
+  } else if (state.topTips.length) {
+    state.dailyMessageKind = "tip";
+  } else {
+    state.dailyMessageKind = "fact";
+  }
+}
+
+function shuffleFact() {
+  if (!state.facts.length && !state.topTips.length) return;
+  const picked = pickDistinctFactIndices();
+  state.headerFactIndex = picked.header;
+  state.footerFactIndex = picked.footer;
+  if (state.topTips.length) {
+    state.topTipIndex = (state.topTipIndex + 1) % state.topTips.length;
+  }
+  rotateDailyMessage();
+  saveFacts(state.facts);
+  saveTopTips(state.topTips);
+  render();
+}
+
+function getHeaderDailyFact() {
+  if (!state.facts.length) return null;
+  const index = typeof state.headerFactIndex === "number" && state.headerFactIndex >= 0
+    ? state.headerFactIndex
+    : 0;
+  return state.facts[index % state.facts.length];
+}
+function getTopTipDailyMessage() {
+  if (!state.topTips.length) return null;
+  const index = typeof state.topTipIndex === "number" && state.topTipIndex >= 0
+    ? state.topTipIndex
+    : 0;
+  return state.topTips[index % state.topTips.length];
+}
+function getCurrentDailyMessage() {
+  if (state.dailyMessageKind === "tip") {
+    return getTopTipDailyMessage() || getHeaderDailyFact();
+  }
+  return getHeaderDailyFact() || getTopTipDailyMessage();
+}
+
+function getActiveWeeklyDev() {
+  if (!state.babyBirthIso) return null;
+  const days = Math.max(0, Math.floor(ageInDays(state.babyBirthIso, new Date())));
+  return DEVELOPMENT.find(item => days >= item.minDay && days <= item.maxDay) || DEVELOPMENT[DEVELOPMENT.length - 1];
+}
+
+function getAgeDays() {
+  if (!state.babyBirthIso) return null;
+  return Math.max(0, Math.floor(ageInDays(state.babyBirthIso, new Date())));
+}
+
+function getActiveAgeFact() {
+  const days = getAgeDays();
+  if (days === null) return null;
+  const match = AGE_FACTS.find(item => days >= item.minDay && days <= item.maxDay);
+  return match ? match.text : AGE_FACTS[AGE_FACTS.length - 1].text;
+}
+
+function getMilestoneForDate(key) {
+  if (!state.babyBirthIso) return null;
+  const birth = new Date(state.babyBirthIso);
+  return MILESTONES.find(item => {
+    const date = new Date(birth);
+    date.setDate(date.getDate() + item.dayOffset);
+    return dateKey(date) === key;
+  }) || null;
+}
+
+function getUpcomingMilestone() {
+  const days = getAgeDays();
+  if (days === null) return null;
+  const next = MILESTONES.find(item => item.dayOffset > days);
+  if (!next) return null;
+  const birth = new Date(state.babyBirthIso);
+  const date = new Date(birth);
+  date.setDate(date.getDate() + next.dayOffset);
+  return { ...next, date };
+}
+
+function triggerConfetti() {
+  const container = document.body;
+  if (!container) return;
+  const pieces = Array.from({ length: 18 }, () => {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    const size = Math.floor(Math.random() * 7) + 6;
+    const left = Math.random() * 90 + 5;
+    const hue = Math.floor(Math.random() * 360);
+    el.style.width = `${size}px`;
+    el.style.height = `${size * 1.5}px`;
+    el.style.left = `${left}%`;
+    el.style.background = `hsl(${hue}, 85%, 60%)`;
+    el.style.animationDuration = `${Math.random() * 0.8 + 1.2}s`;
+    container.appendChild(el);
+    return el;
+  });
+  setTimeout(() => pieces.forEach(el => el.remove()), 1800);
+}
+
 /* =========================================================================
    PERSISTENCE (localStorage)
 ========================================================================= */
@@ -642,9 +987,20 @@ function loadState() {
     if (birth) state.babyBirthIso = birth;
   } catch (e) { console.error("Could not load birth date", e); }
   try {
+    const name = localStorage.getItem(BABY_NAME_KEY);
+    if (name) state.babyName = name;
+    const pronouns = localStorage.getItem(BABY_PRONOUNS_KEY);
+    if (pronouns) state.babyPronouns = pronouns;
+  } catch (e) { console.error("Could not load baby profile", e); }
+  try {
     const raw = localStorage.getItem(WEIGHTS_KEY);
     if (raw) state.weights = JSON.parse(raw);
   } catch (e) { console.error("Could not load weights", e); }
+  try {
+    state.facts = loadFacts();
+    state.topTips = loadTopTips();
+    initializeFactIndices();
+  } catch (e) { console.error("Could not load facts", e); state.facts = [...DEFAULT_FACTS]; state.topTips = []; initializeFactIndices(); }
 }
 function saveEntries() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.entries)); }
@@ -664,6 +1020,10 @@ function setBabyBirth(iso, { fromRemote } = {}) {
 function saveWeights() {
   try { localStorage.setItem(WEIGHTS_KEY, JSON.stringify(state.weights)); }
   catch (e) { console.error("Could not save weights", e); }
+}
+function saveBabyProfile() {
+  try { localStorage.setItem(BABY_NAME_KEY, state.babyName || "Emmy"); } catch (e) {}
+  try { localStorage.setItem(BABY_PRONOUNS_KEY, state.babyPronouns || "she"); } catch (e) {}
 }
 
 /* =========================================================================
@@ -881,6 +1241,109 @@ function exportCsv() {
   showToast("CSV exported ⬇️");
 }
 
+function exportJson() {
+  const nowIso = new Date().toISOString();
+  const payload = {
+    meta: {
+      appVersion: APP_VERSION,
+      exportDate: nowIso,
+      type: "baby-tracker-backup",
+      version: "2.6",
+    },
+    birthDate: state.babyBirthIso,
+    babyProfile: {
+      name: state.babyName,
+      pronouns: state.babyPronouns,
+    },
+    entries: state.entries,
+    weights: state.weights,
+    facts: state.facts,
+    topTips: state.topTips,
+    lastExport: state.lastExport,
+    sync: {
+      connected: state.syncConnected,
+      latestVersion: state.latestVersion,
+      latestUrl: state.latestUrl,
+    }
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `baby-tracker-backup-${dateKey(new Date())}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast("JSON backup exported ⬇️");
+}
+
+function handleImportJsonFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => {
+    try {
+      const payload = parseJsonBackup(evt.target.result);
+      if (!payload) {
+        showToast("That JSON file doesn't look like a valid backup.");
+        return;
+      }
+      restoreJsonBackup(payload);
+      showToast("JSON backup restored ✅");
+      render();
+    } catch (err) {
+      console.error(err);
+      showToast("Could not restore that JSON file.");
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = "";
+}
+
+function parseJsonBackup(text) {
+  try {
+    const data = JSON.parse(text);
+    if (!data || !data.meta || data.meta.type !== "baby-tracker-backup") return null;
+    return data;
+  } catch (e) {
+    return null;
+  }
+}
+
+function restoreJsonBackup(data) {
+  if (Array.isArray(data.entries)) {
+    state.entries = data.entries;
+    saveEntries();
+  }
+  if (Array.isArray(data.weights)) {
+    state.weights = data.weights;
+    saveWeights();
+  }
+  if (Array.isArray(data.facts)) {
+    state.facts = data.facts;
+    saveFacts(state.facts);
+  }
+  if (Array.isArray(data.topTips)) {
+    state.topTips = data.topTips;
+    saveTopTips(state.topTips);
+  }
+  if (data.birthDate) {
+    state.babyBirthIso = data.birthDate;
+    try { localStorage.setItem(BIRTH_KEY, state.babyBirthIso); } catch (e) {}
+  }
+  if (data.babyProfile) {
+    if (data.babyProfile.name) state.babyName = data.babyProfile.name;
+    if (data.babyProfile.pronouns) state.babyPronouns = data.babyProfile.pronouns;
+    saveBabyProfile();
+  }
+  if (data.lastExport) {
+    state.lastExport = data.lastExport;
+    saveExportTime(state.lastExport);
+  }
+  render();
+}
+
 /* =========================================================================
    RENDER: ROOT
 ========================================================================= */
@@ -897,6 +1360,13 @@ function render() {
     ${state.showSyncPanel ? renderSyncModal() : ""}
   `;
   attachInputListeners();
+  if (state.tab === "calendar") {
+    const selectedMilestone = getMilestoneForDate(state.selectedDate);
+    if (selectedMilestone && state.milestoneConfettiLast !== state.selectedDate) {
+      triggerConfetti();
+      state.milestoneConfettiLast = state.selectedDate;
+    }
+  }
 }
 
 function renderSyncModal() {
@@ -908,9 +1378,24 @@ function renderSyncModal() {
         <button class="modal-close tap" data-action="close-sync">${ICONS.x}</button>
       </div>
 
-      <div class="settings-section-title heading">👶 Emmy's birth</div>
+      <div class="settings-section-title heading">👶 Baby profile</div>
       <div class="sync-steps" style="margin-bottom:10px;">
-        Set this once and her age shows up around the app, and syncs to your partner automatically once connected below.
+        These details make the facts feel more personal and they’re used around the app too.
+      </div>
+      <div class="field-block" style="margin-bottom:10px;">
+        <div class="field-label">🪪 Name</div>
+        <input type="text" data-field="babyNameInput" value="${esc(state.babyName || "Emmy")}" placeholder="Baby's name" />
+      </div>
+      <div class="field-block" style="margin-bottom:10px;">
+        <div class="field-label">💗 Pronouns</div>
+        <div class="side-grid">
+          ${["she","he","they"].map(p => `<button class="side-btn tap ${state.babyPronouns === p ? "active" : ""}" data-action="set-pronoun" data-pronoun="${p}">${p}</button>`).join("")}
+        </div>
+      </div>
+
+      <div class="settings-section-title heading">🎂 ${getBabyNamePossessive()} birth</div>
+      <div class="sync-steps" style="margin-bottom:10px;">
+        Set this once and ${getBabyNamePossessive()} age shows up around the app, and syncs to your partner automatically once connected below.
       </div>
       <div class="row-flex">
         <input type="datetime-local" data-field="birthInputText" value="${state.birthInputText || (state.babyBirthIso ? localInputValue(new Date(state.babyBirthIso)) : "")}" />
@@ -922,7 +1407,7 @@ function renderSyncModal() {
 
       <div class="settings-section-title heading">⚖️ Weight checks</div>
       <div class="sync-steps" style="margin-bottom:10px;">
-        Add a weigh-in whenever a midwife or health visitor checks her.
+        ${getPersonalizedText("Add a weigh-in whenever a midwife or health visitor checks {pronounObject}.")}
       </div>
       <div class="row-flex" style="margin-bottom:8px;">
         <input type="date" data-field="weightDateInput" value="${state.weightDateInput || dateKey(new Date())}" style="flex:1.2;" />
@@ -947,7 +1432,53 @@ function renderSyncModal() {
 
       <div class="settings-divider"></div>
 
-      <div class="settings-section-title heading">🔗 Sync with your partner</div>
+      <div class="settings-section-title heading">💡 Top tips</div>
+      <div class="sync-steps" style="margin-bottom:10px;">
+        Add short top tips here and they’ll alternate with the facts in the banner at the top of the page.
+      </div>
+      <div class="row-flex" style="margin-bottom:8px;">
+        <input type="text" id="newTopTipInput" placeholder="Add a new top tip" style="flex:1.2; padding:10px; border-radius:12px; border:1.5px solid var(--line); font-size:14px;" />
+        <button class="now-btn tap" onclick="addTopTipFromInput()">Add</button>
+      </div>
+      ${state.topTips.length > 0 ? `
+        <div style="display:flex; flex-direction:column; gap:6px; margin-top:4px;">
+          ${state.topTips.map(tip => `
+            <div style="background:var(--bg); border-radius:10px; padding:10px; font-size:13px; color:var(--ink);">${esc(tip)}</div>
+          `).join("")}
+        </div>` : `<div class="empty-state">No top tips yet. Add one above to see them alternate with the facts.</div>`}
+
+      <div class="settings-divider"></div>
+
+      <div class="settings-section-title heading">✨ Baby facts</div>
+      <div class="sync-steps" style="margin-bottom:10px;">
+        Add simple baby facts here and they will show on the main log page with ${getBabyNamePossessive()} name and pronouns.
+      </div>
+      <div class="row-flex" style="margin-bottom:8px;">
+        <input type="text" id="newFactInput" placeholder="Add a new fact" style="flex:1.2; padding:10px; border-radius:12px; border:1.5px solid var(--line); font-size:14px;" />
+        <button class="now-btn tap" onclick="addFactFromInput()">Add</button>
+      </div>
+      ${state.facts.length > 0 ? `
+        <div style="display:flex; flex-direction:column; gap:6px; margin-top:4px;">
+          ${state.facts.map(fact => `
+            <div style="background:var(--bg); border-radius:10px; padding:10px; font-size:13px; color:var(--ink);">${esc(fact)}</div>
+          `).join("")}
+        </div>` : `<div class="empty-state">No facts yet. Add one above to see it on the main page.</div>`}
+
+      <div class="settings-divider"></div>
+
+      <div class="settings-section-title heading">� Backup & restore</div>
+      <div class="sync-steps" style="margin-bottom:10px;">
+        Export a full JSON backup with your entries, birth date, weight history, facts and app metadata. Restore a backup file anytime.
+      </div>
+      <div class="row-flex" style="margin-bottom:12px;">
+        <button class="export-btn tap" data-action="export-json">Export JSON</button>
+        <button class="export-btn tap" data-action="restore-json">Restore JSON</button>
+      </div>
+      <input type="file" id="importJsonFile" accept=".json,application/json" style="display:none" />
+
+      <div class="settings-divider"></div>
+
+      <div class="settings-section-title heading">�🔗 Sync with your partner</div>
 
       <div class="sync-status-pill ${state.syncConnected ? "on" : "off"}">
         ${state.syncConnected ? "🟢 Connected — changes sync automatically" : "⚪ Not connected — this device is local-only"}
@@ -987,7 +1518,8 @@ function renderFooter() {
   const updateAvailable = state.latestVersion && compareVersions(state.latestVersion, APP_VERSION) > 0;
   return `
   <div class="app-footer">
-    v${APP_VERSION}${updateAvailable ? ` · <a href="${esc(state.latestUrl || '#')}" target="_blank" rel="noopener" class="update-link">Update available (v${esc(state.latestVersion)}) ↗</a>` : ""} · For Kerrie and Emmy &lt;3
+    <span>v${APP_VERSION}${updateAvailable ? ` · <a href="${esc(state.latestUrl || '#')}" target="_blank" rel="noopener" class="update-link">Update available (v${esc(state.latestVersion)}) ↗</a>` : ""}</span>
+    <span>· For Kerrie and Emmy &lt;3</span>
   </div>`;
 }
 
@@ -1002,7 +1534,7 @@ function renderHeader() {
     <div class="header-row">
       <div>
         <h1 class="title heading">🍼 Little Log</h1>
-        ${state.babyBirthIso ? `<div class="age-subtitle">👶 Emmy is ${formatAge(state.babyBirthIso, state.now)}</div>` : `<button class="age-subtitle age-link tap" data-action="open-sync">👶 Add her birth date →</button>`}
+        ${state.babyBirthIso ? `<div class="age-subtitle">👶 ${getBabyName()} is ${formatAge(state.babyBirthIso, state.now)}</div>` : `<button class="age-subtitle age-link tap" data-action="open-sync">👶 Add ${getBabyNamePossessive()} birth date →</button>`}
       </div>
       <div class="header-actions">
         <button class="export-btn tap sync-btn" data-action="open-sync" aria-label="Settings">
@@ -1027,6 +1559,18 @@ function renderHeader() {
       ${renderSinceCard("Since last feed", "🍼", lastFeed?.datetime, "var(--breast)")}
       ${renderSinceCard("Since last pump", "🥛", lastPump?.datetime, "var(--pumping)")}
     </div>
+    ${renderHeaderFactBanner()}
+  </div>`;
+}
+function renderHeaderFactBanner() {
+  const dailyMessage = getCurrentDailyMessage();
+  if (!dailyMessage) return "";
+  const label = state.dailyMessageKind === "tip" ? "Top tip" : "Daily fact";
+  const icon = state.dailyMessageKind === "tip" ? "💡" : "✨";
+  return `
+  <div class="header-fact-banner fade-in">
+    <span class="header-fact-icon">${icon}</span>
+    <span><strong>${label}</strong> — ${esc(getPersonalizedText(dailyMessage))}</span>
   </div>`;
 }
 function renderSinceCard(label, emoji, lastIso, color) {
@@ -1117,6 +1661,8 @@ function renderLogTab() {
       </button>
     </div>
 
+    ${renderDevelopmentBlock()}
+
     <div class="section-title heading">Today · ${todaysEntries.length} ${todaysEntries.length === 1 ? "entry" : "entries"}</div>
     ${todaysEntries.length === 0
       ? `<div class="empty-state">Nothing logged yet today. First entry above 👆</div>`
@@ -1152,6 +1698,20 @@ function renderEntryRow(entry) {
   </div>`;
 }
 
+function renderDevelopmentBlock() {
+  const weekly = getActiveWeeklyDev();
+  return `
+  <div class="dev-block-card fade-in">
+    <div class="dev-row">
+      <div class="dev-row-icon">🌼</div>
+      <div>
+        <div class="dev-header">${getBabyName()} this week</div>
+        <div class="dev-body-text">${esc(getPersonalizedText(weekly?.text || `${getBabyNamePossessive()} birth date`))}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
 /* =========================================================================
    CALENDAR TAB
 ========================================================================= */
@@ -1173,6 +1733,8 @@ function renderCalendarTab() {
 
   const todayK = dateKey(new Date());
   const dayEntries = entriesByDate[state.selectedDate] || [];
+  const selectedMilestone = getMilestoneForDate(state.selectedDate);
+  const upcomingMilestone = getUpcomingMilestone();
 
   return `
   <div class="pad">
@@ -1193,13 +1755,16 @@ function renderCalendarTab() {
           const isSelected = k === state.selectedDate;
           const isToday = k === todayK;
           const isBirthday = state.babyBirthIso && k === dateKey(new Date(state.babyBirthIso));
-          return `<button class="day-cell tap ${isToday ? "today":""} ${isSelected ? "selected":""} ${isBirthday ? "birthday":""}" data-action="select-date" data-date="${k}">
-            ${isBirthday ? "🎂" : d}${has ? `<span class="day-dot"></span>` : ""}
+          const milestone = getMilestoneForDate(k);
+          return `<button class="day-cell tap ${isToday ? "today":""} ${isSelected ? "selected":""} ${isBirthday ? "birthday":""} ${milestone ? "milestone":""}" data-action="select-date" data-date="${k}">
+            ${milestone ? milestone.icon : d}${has ? `<span class="day-dot"></span>` : ""}
           </button>`;
         }).join("")}
       </div>
     </div>
-    ${state.babyBirthIso && dateKey(new Date(state.babyBirthIso)) === state.selectedDate ? `<div style="text-align:center; font-size:12px; font-weight:700; color:var(--breast); margin-top:6px;">🎂 Emmy's birth day</div>` : ""}
+    ${selectedMilestone ? `<div class="milestone-banner"><strong>${selectedMilestone.icon} ${selectedMilestone.title}</strong> — ${esc(selectedMilestone.text)}</div>` : ""}
+    ${upcomingMilestone ? `<div class="milestone-banner">Next milestone: ${upcomingMilestone.title} on ${upcomingMilestone.date.toLocaleDateString(undefined,{month:"short", day:"numeric"})}</div>` : ""}
+    ${state.babyBirthIso && dateKey(new Date(state.babyBirthIso)) === state.selectedDate ? `<div style="text-align:center; font-size:12px; font-weight:700; color:var(--breast); margin-top:6px;">🎂 ${getBabyNamePossessive()} birth day</div>` : ""}
 
     <div class="day-nav">
       <button class="nav-arrow tap" data-action="shift-day" data-delta="-1">${ICONS.chevronLeft}</button>
@@ -1368,11 +1933,28 @@ function renderSummaryTab() {
       ${renderSimpleBars(days, "pumpedMl", TYPE_META.pumping.color, maxPumped, "ml")}
     </div>` : ""}
 
-    ${intakeSection || (state.entries.length > 0 ? `<div class="empty-state">Add Emmy's birth date in ⚙️ Settings to see her intake trend vs a typical range for her age.</div>` : "")}
+    ${intakeSection || (state.entries.length > 0 ? `<div class="empty-state">Add ${getBabyNamePossessive()} birth date in ⚙️ Settings to see ${getPersonalizedText("{pronounPossessive} intake trend vs a typical range for {pronounPossessive} age.")}</div>` : "")}
 
     ${renderWeightSection()}
 
+    ${renderSummaryFactBlock()}
+
     ${state.entries.length === 0 ? `<div class="empty-state">Log a few entries to see your summary here.</div>` : ""}
+  </div>`;
+}
+
+function renderSummaryFactBlock() {
+  const ageFact = getActiveAgeFact();
+  if (!ageFact) return "";
+  return `
+  <div class="dev-block-card fade-in" style="margin-top:16px;">
+    <div class="dev-row">
+      <div class="dev-row-icon">💡</div>
+      <div>
+        <div class="dev-header">Did you know?</div>
+        <div class="dev-body-text">${esc(getPersonalizedText(ageFact))}</div>
+      </div>
+    </div>
   </div>`;
 }
 
@@ -1503,6 +2085,9 @@ function attachInputListeners() {
         state.syncConfigText = e.target.value;
       } else if (el.dataset.field === "birthInputText") {
         state.birthInputText = e.target.value;
+      } else if (el.dataset.field === "babyNameInput") {
+        state.babyName = e.target.value;
+        saveBabyProfile();
       } else if (el.dataset.field === "weightDateInput") {
         state.weightDateInput = e.target.value;
       } else if (el.dataset.field === "weightKgInput") {
@@ -1516,6 +2101,8 @@ function attachInputListeners() {
   });
   const importInput = document.getElementById("importFile");
   if (importInput) importInput.addEventListener("change", handleImportFile);
+  const importJsonInput = document.getElementById("importJsonFile");
+  if (importJsonInput) importJsonInput.addEventListener("change", handleImportJsonFile);
 }
 
 document.addEventListener("click", (e) => {
@@ -1563,6 +2150,12 @@ document.addEventListener("click", (e) => {
     case "import":
       document.getElementById("importFile").click();
       break;
+    case "export-json":
+      exportJson();
+      break;
+    case "restore-json":
+      document.getElementById("importJsonFile").click();
+      break;
     case "open-sync":
       state.showSyncPanel = true;
       state.syncStatusMsg = "";
@@ -1578,6 +2171,12 @@ document.addEventListener("click", (e) => {
       if (!val) { showToast("Pick a date and time first"); break; }
       setBabyBirth(new Date(val).toISOString());
       showToast("🎂 Birth date saved");
+      break;
+    }
+    case "set-pronoun": {
+      state.babyPronouns = btn.dataset.pronoun || "she";
+      saveBabyProfile();
+      render();
       break;
     }
     case "add-weight":
