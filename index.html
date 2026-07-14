@@ -237,8 +237,9 @@
   .chart-title { font-weight: 800; font-size: 14px; margin-bottom: 10px; }
   .bar-chart { display: flex; align-items: flex-end; justify-content: space-between; height: 150px; gap: 5px; }
   .bar-item { flex: 1; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; min-width: 0; }
-  .bar-num { font-size: 9px; font-weight: 800; color: var(--ink); margin-bottom: 3px; white-space: nowrap; line-height: 1; }
-  .bar-num.zero { color: var(--ink-soft); opacity: 0.5; }
+  .bar-num-stack { display: flex; flex-direction: column; align-items: center; margin-bottom: 3px; }
+  .bar-num-line { font-size: 8.5px; font-weight: 800; white-space: nowrap; line-height: 1.25; }
+  .bar-num-line.zero { color: var(--ink-soft); opacity: 0.5; }
   .bar-col { width: 100%; display: flex; flex-direction: column-reverse; border-radius: 4px; overflow: hidden; background: var(--bg); }
   .bar-pair { display: flex; gap: 2px; width: 100%; align-items: flex-end; }
   .bar-seg { width: 100%; }
@@ -328,8 +329,9 @@ const STORAGE_KEY = "babyFeedEntries";
 const EXPORT_KEY = "babyFeedLastExport";
 const FIREBASE_CONFIG_KEY = "babyFeedFirebaseConfig";
 const BIRTH_KEY = "babyBirthIso";
+const WEIGHTS_KEY = "babyWeights";
 const EXPORT_REMINDER_MS = 24 * 60 * 60 * 1000;
-const APP_VERSION = "2.2";
+const APP_VERSION = "2.3";
 
 const TYPE_META = {
   breast:  { label: "Breastmilk", emoji: "🤱", color: "#FF8A73", soft: "#FFE7E0" },
@@ -374,6 +376,10 @@ let state = {
   latestUrl: null,
   babyBirthIso: null,
   birthInputText: "",
+  weights: [],
+  weightDateInput: "",
+  weightKgInput: "",
+  weightNoteInput: "",
   form: {
     type: "breast",
     datetime: localInputValue(new Date()),
@@ -428,6 +434,13 @@ function formatDuration(mins) {
   return h === 0 ? `${m}m` : `${h}h ${m}m`;
 }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function kgToLbOz(kg) {
+  const totalOz = kg * 35.27396195;
+  let lb = Math.floor(totalOz / 16);
+  let oz = Math.round(totalOz % 16);
+  if (oz === 16) { lb += 1; oz = 0; }
+  return `${lb}lb ${oz}oz`;
+}
 function compareVersions(a, b) {
   const pa = String(a).split(".").map(Number);
   const pb = String(b).split(".").map(Number);
@@ -628,6 +641,10 @@ function loadState() {
     const birth = localStorage.getItem(BIRTH_KEY);
     if (birth) state.babyBirthIso = birth;
   } catch (e) { console.error("Could not load birth date", e); }
+  try {
+    const raw = localStorage.getItem(WEIGHTS_KEY);
+    if (raw) state.weights = JSON.parse(raw);
+  } catch (e) { console.error("Could not load weights", e); }
 }
 function saveEntries() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.entries)); }
@@ -644,6 +661,10 @@ function setBabyBirth(iso, { fromRemote } = {}) {
     metaRef.child("babyBirthIso").set(iso).catch(e => console.error("Sync write failed", e));
   }
 }
+function saveWeights() {
+  try { localStorage.setItem(WEIGHTS_KEY, JSON.stringify(state.weights)); }
+  catch (e) { console.error("Could not save weights", e); }
+}
 
 /* =========================================================================
    CLOUD SYNC (Firebase Realtime Database — shared between two devices)
@@ -651,12 +672,19 @@ function setBabyBirth(iso, { fromRemote } = {}) {
 let syncDb = null;
 let syncRef = null;
 let metaRef = null;
+let weightsRef = null;
 let syncFirstSnapshot = true;
+let weightsFirstSnapshot = true;
 
 function entriesMissingFrom(target, source) {
   const sigOf = e => [e.datetime, e.type, e.side, e.amountMl, e.durationMin, (e.notes||"").trim()].join("|");
   const targetSigs = new Set(target.map(sigOf));
   return source.filter(e => !targetSigs.has(sigOf(e)));
+}
+function weightsMissingFrom(target, source) {
+  const sigOf = w => [w.dateIso, w.kg, (w.notes||"").trim()].join("|");
+  const targetSigs = new Set(target.map(sigOf));
+  return source.filter(w => !targetSigs.has(sigOf(w)));
 }
 
 function parseFirebaseConfigInput(text) {
@@ -718,6 +746,23 @@ function connectFirebase(configObj, { silent } = {}) {
       render();
     });
 
+    weightsRef = syncDb.ref("weights");
+    weightsFirstSnapshot = true;
+    weightsRef.on("value", snapshot => {
+      const val = snapshot.val() || {};
+      const remoteWeights = Object.values(val);
+
+      if (weightsFirstSnapshot) {
+        weightsFirstSnapshot = false;
+        const localOnly = weightsMissingFrom(remoteWeights, state.weights);
+        localOnly.forEach(w => weightsRef.child(w.id).set(w));
+      }
+
+      state.weights = remoteWeights.sort((a,b) => new Date(a.dateIso) - new Date(b.dateIso));
+      saveWeights();
+      render();
+    });
+
     localStorage.setItem(FIREBASE_CONFIG_KEY, JSON.stringify(configObj));
     state.syncConnected = true;
     state.syncStatusMsg = "";
@@ -733,7 +778,8 @@ function connectFirebase(configObj, { silent } = {}) {
 function disconnectSync() {
   if (syncRef) { try { syncRef.off(); } catch(e) {} }
   if (metaRef) { try { metaRef.off(); } catch(e) {} }
-  syncDb = null; syncRef = null; metaRef = null;
+  if (weightsRef) { try { weightsRef.off(); } catch(e) {} }
+  syncDb = null; syncRef = null; metaRef = null; weightsRef = null;
   localStorage.removeItem(FIREBASE_CONFIG_KEY);
   state.syncConnected = false;
   state.latestVersion = null;
@@ -769,6 +815,33 @@ function deleteEntry(id) {
   state.confirmingDelete = null;
   saveEntries();
   if (syncRef) syncRef.child(id).remove().catch(e => console.error("Sync delete failed", e));
+  render();
+}
+function addWeight() {
+  const dateVal = state.weightDateInput || dateKey(new Date());
+  const kgVal = parseFloat(state.weightKgInput);
+  if (!kgVal || kgVal <= 0) { showToast("Enter a weight in kg first"); return; }
+  const [y,m,d] = dateVal.split("-").map(Number);
+  const entry = {
+    id: uid(),
+    dateIso: new Date(y, m-1, d, 12, 0, 0).toISOString(),
+    kg: kgVal,
+    notes: (state.weightNoteInput || "").trim(),
+  };
+  state.weights.push(entry);
+  state.weights.sort((a,b) => new Date(a.dateIso) - new Date(b.dateIso));
+  saveWeights();
+  if (weightsRef) weightsRef.child(entry.id).set(entry).catch(e => console.error("Sync write failed", e));
+  showToast("⚖️ Weight saved");
+  state.weightDateInput = "";
+  state.weightKgInput = "";
+  state.weightNoteInput = "";
+  render();
+}
+function deleteWeight(id) {
+  state.weights = state.weights.filter(w => w.id !== id);
+  saveWeights();
+  if (weightsRef) weightsRef.child(id).remove().catch(e => console.error("Sync delete failed", e));
   render();
 }
 function showToast(msg) {
@@ -844,6 +917,33 @@ function renderSyncModal() {
         <button class="now-btn tap" data-action="save-birth">Save</button>
       </div>
       ${state.babyBirthIso ? `<div style="font-size:12px; font-weight:700; color:var(--mint); margin-top:6px;">🎂 Currently set: ${new Date(state.babyBirthIso).toLocaleString(undefined,{weekday:"short", day:"numeric", month:"short", hour:"numeric", minute:"2-digit"})}</div>` : ""}
+
+      <div class="settings-divider"></div>
+
+      <div class="settings-section-title heading">⚖️ Weight checks</div>
+      <div class="sync-steps" style="margin-bottom:10px;">
+        Add a weigh-in whenever a midwife or health visitor checks her.
+      </div>
+      <div class="row-flex" style="margin-bottom:8px;">
+        <input type="date" data-field="weightDateInput" value="${state.weightDateInput || dateKey(new Date())}" style="flex:1.2;" />
+        <input type="number" step="0.01" inputmode="decimal" placeholder="kg" data-field="weightKgInput" value="${state.weightKgInput}" style="flex:0.8; padding:10px; border-radius:12px; border:1.5px solid var(--line); font-size:14px;" />
+      </div>
+      <div class="row-flex" style="margin-bottom:8px;">
+        <input type="text" placeholder="Note (optional)" data-field="weightNoteInput" value="${esc(state.weightNoteInput)}" style="flex:1; padding:10px; border-radius:12px; border:1.5px solid var(--line); font-size:14px;" />
+        <button class="now-btn tap" data-action="add-weight">Add</button>
+      </div>
+      ${state.weights.length > 0 ? `
+        <div style="display:flex; flex-direction:column; gap:6px; margin-top:4px;">
+          ${[...state.weights].sort((a,b)=>new Date(b.dateIso)-new Date(a.dateIso)).map(w => `
+            <div style="display:flex; align-items:center; justify-content:space-between; background:var(--bg); border-radius:10px; padding:8px 10px; font-size:12.5px;">
+              <div>
+                <b>${w.kg.toFixed(2)}kg</b> <span style="color:var(--ink-soft);">(${kgToLbOz(w.kg)})</span>
+                <span style="color:var(--ink-soft);"> · ${new Date(w.dateIso).toLocaleDateString(undefined,{day:"numeric",month:"short"})}</span>
+                ${w.notes ? `<div style="color:var(--ink-soft); margin-top:2px;">${esc(w.notes)}</div>` : ""}
+              </div>
+              <button class="del-btn tap" data-action="delete-weight" data-id="${w.id}">${ICONS.trash}</button>
+            </div>`).join("")}
+        </div>` : ""}
 
       <div class="settings-divider"></div>
 
@@ -1257,8 +1357,8 @@ function renderSummaryTab() {
         {key:"dirty", color: TYPE_META.dirtyNappy.color},
       ])}
       <div class="legend" style="flex-direction:row; gap:14px; margin-top:8px;">
-        <div class="legend-item"><span class="legend-swatch" style="background:${TYPE_META.wetNappy.color};"></span>Wet — ${days.reduce((s,d)=>s+d.wet,0)}</div>
-        <div class="legend-item"><span class="legend-swatch" style="background:${TYPE_META.dirtyNappy.color};"></span>Dirty — ${days.reduce((s,d)=>s+d.dirty,0)}</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:${TYPE_META.wetNappy.color};"></span>Wet, 7-day total: ${days.reduce((s,d)=>s+d.wet,0)}</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:${TYPE_META.dirtyNappy.color};"></span>Dirty, 7-day total: ${days.reduce((s,d)=>s+d.dirty,0)}</div>
       </div>
     </div>
 
@@ -1270,7 +1370,37 @@ function renderSummaryTab() {
 
     ${intakeSection || (state.entries.length > 0 ? `<div class="empty-state">Add Emmy's birth date in ⚙️ Settings to see her intake trend vs a typical range for her age.</div>` : "")}
 
+    ${renderWeightSection()}
+
     ${state.entries.length === 0 ? `<div class="empty-state">Log a few entries to see your summary here.</div>` : ""}
+  </div>`;
+}
+
+function renderWeightSection() {
+  if (state.weights.length === 0) {
+    return `<div class="chart-card" style="margin-top:16px;">
+      <div class="chart-title heading">⚖️ Weight</div>
+      <div class="empty-state">No weigh-ins logged yet — add one in ⚙️ Settings after your next midwife or health visitor check.</div>
+    </div>`;
+  }
+  const sorted = [...state.weights].sort((a,b) => new Date(a.dateIso) - new Date(b.dateIso));
+  const latest = sorted[sorted.length - 1];
+  const rows = [...sorted].reverse().map((w, idx) => {
+    const prev = sorted[sorted.length - 1 - idx - 1];
+    const delta = prev ? Math.round((w.kg - prev.kg) * 1000) : null;
+    return `
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line);">
+      <div>
+        <b>${w.kg.toFixed(2)}kg</b> <span style="color:var(--ink-soft); font-size:12px;">(${kgToLbOz(w.kg)})</span>
+        <div style="font-size:11.5px; color:var(--ink-soft);">${new Date(w.dateIso).toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"})}${w.notes ? " · "+esc(w.notes) : ""}</div>
+      </div>
+      ${delta !== null ? `<div style="font-size:12.5px; font-weight:800; color:${delta>=0?"var(--mint)":"#E85D5D"};">${delta>=0?"+":""}${delta}g</div>` : ""}
+    </div>`;
+  }).join("");
+  return `
+  <div class="chart-card" style="margin-top:16px;">
+    <div class="chart-title heading">⚖️ Weight — latest ${latest.kg.toFixed(2)}kg (${kgToLbOz(latest.kg)})</div>
+    <div>${rows}</div>
   </div>`;
 }
 
@@ -1292,8 +1422,10 @@ function renderStackedBars(days, series) {
     const segs = series.map(ser => d[ser.key]
       ? `<div class="bar-seg" style="height:${(d[ser.key]/Math.max(total,1))*100}%; background:${ser.color};"></div>`
       : "").join("");
+    const lines = series.filter(ser => d[ser.key] > 0)
+      .map(ser => `<div class="bar-num-line" style="color:${ser.color};">${d[ser.key]}</div>`).join("");
     return `<div class="bar-item">
-      <div class="bar-num ${total===0?"zero":""}">${total}</div>
+      <div class="bar-num-stack">${lines || `<div class="bar-num-line zero">0</div>`}</div>
       <div class="bar-col" style="height:${hpx}px;">${segs}</div>
     </div>`;
   }).join("");
@@ -1306,7 +1438,9 @@ function renderSimpleBars(days, key, color, max, unit) {
     const v = d[key] || 0;
     const hpx = max === 0 ? 0 : Math.max(4, (v / max) * BAR_MAX_PX);
     return `<div class="bar-item">
-      <div class="bar-num ${v===0?"zero":""}">${v}${v>0 ? (unit||"") : ""}</div>
+      <div class="bar-num-stack">
+        <div class="bar-num-line ${v===0?"zero":""}" style="${v>0?`color:${color};`:""}">${v}${v>0 ? (unit||"") : ""}</div>
+      </div>
       <div class="bar-col" style="height:${hpx}px;"><div class="bar-seg" style="height:100%; background:${color};"></div></div>
     </div>`;
   }).join("");
@@ -1315,13 +1449,16 @@ function renderSimpleBars(days, key, color, max, unit) {
 }
 
 function renderComparisonBars(days) {
-  const REF_COLOR = "#D8D2CB";
+  const REF_COLOR = "#B0A89D";
   const maxVal = Math.max(1, ...days.map(d => Math.max(d.actualMl, d.expectedMl)));
   const bars = days.map(d => {
     const actualH = d.actualMl === 0 ? 0 : Math.max(4, (d.actualMl/maxVal)*BAR_MAX_PX);
     const expectedH = Math.max(4, (d.expectedMl/maxVal)*BAR_MAX_PX);
     return `<div class="bar-item">
-      <div class="bar-num ${d.actualMl===0?"zero":""}">${d.actualMl || "–"}</div>
+      <div class="bar-num-stack">
+        <div class="bar-num-line ${d.actualMl===0?"zero":""}" style="${d.actualMl>0?`color:${TYPE_META.formula.color};`:""}">${d.actualMl || 0}</div>
+        <div class="bar-num-line" style="color:${REF_COLOR};">~${d.expectedMl}</div>
+      </div>
       <div class="bar-pair">
         <div class="bar-col" style="width:50%; height:${actualH}px; background:${TYPE_META.formula.color};"></div>
         <div class="bar-col" style="width:50%; height:${expectedH}px; background:${REF_COLOR};"></div>
@@ -1366,6 +1503,12 @@ function attachInputListeners() {
         state.syncConfigText = e.target.value;
       } else if (el.dataset.field === "birthInputText") {
         state.birthInputText = e.target.value;
+      } else if (el.dataset.field === "weightDateInput") {
+        state.weightDateInput = e.target.value;
+      } else if (el.dataset.field === "weightKgInput") {
+        state.weightKgInput = e.target.value;
+      } else if (el.dataset.field === "weightNoteInput") {
+        state.weightNoteInput = e.target.value;
       } else {
         state.form[el.dataset.field] = e.target.value;
       }
@@ -1437,6 +1580,12 @@ document.addEventListener("click", (e) => {
       showToast("🎂 Birth date saved");
       break;
     }
+    case "add-weight":
+      addWeight();
+      break;
+    case "delete-weight":
+      deleteWeight(btn.dataset.id);
+      break;
     case "connect-sync": {
       const parsed = parseFirebaseConfigInput(state.syncConfigText);
       if (!parsed) {
