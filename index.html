@@ -61,6 +61,11 @@
   .header-row { display: flex; align-items: center; justify-content: space-between; }
   .header-actions { display: flex; gap: 6px; }
   .title { font-size: 22px; font-weight: 800; margin: 0; }
+  .age-subtitle {
+    font-size: 12px; font-weight: 700; color: var(--ink-soft); margin-top: 2px;
+    background: none; border: none; padding: 0; text-align: left;
+  }
+  .age-link { color: var(--breast); cursor: pointer; }
   .export-btn {
     position: relative;
     display: flex; align-items: center; gap: 6px;
@@ -208,6 +213,8 @@
     width: 4px; height: 4px; border-radius: 50%; background: var(--pumping);
   }
   .day-cell.selected .day-dot { background: #fff; }
+  .day-cell.birthday { background: var(--breast-soft); border-color: var(--breast); font-size: 14px; }
+  .day-cell.birthday.selected { background: var(--breast); }
   .day-nav { display: flex; align-items: center; justify-content: space-between; margin: 18px 0 10px; }
   .day-title { font-weight: 800; font-size: 16px; }
 
@@ -228,10 +235,14 @@
 
   .chart-card { background: var(--card); border-radius: 18px; padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); margin-bottom: 16px; }
   .chart-title { font-weight: 800; font-size: 14px; margin-bottom: 10px; }
-  .bar-chart { display: flex; align-items: flex-end; justify-content: space-between; height: 140px; gap: 6px; }
-  .bar-col { flex: 1; display: flex; flex-direction: column-reverse; height: 100%; border-radius: 4px; overflow: hidden; background: var(--bg); }
+  .bar-chart { display: flex; align-items: flex-end; justify-content: space-between; height: 150px; gap: 5px; }
+  .bar-item { flex: 1; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; min-width: 0; }
+  .bar-num { font-size: 9px; font-weight: 800; color: var(--ink); margin-bottom: 3px; white-space: nowrap; line-height: 1; }
+  .bar-num.zero { color: var(--ink-soft); opacity: 0.5; }
+  .bar-col { width: 100%; display: flex; flex-direction: column-reverse; border-radius: 4px; overflow: hidden; background: var(--bg); }
+  .bar-pair { display: flex; gap: 2px; width: 100%; align-items: flex-end; }
   .bar-seg { width: 100%; }
-  .bar-labels { display: flex; justify-content: space-between; gap: 6px; margin-top: 6px; }
+  .bar-labels { display: flex; justify-content: space-between; gap: 5px; margin-top: 6px; }
   .bar-label { flex: 1; text-align: center; font-size: 9.5px; color: var(--ink-soft); font-weight: 700; }
 
   .donut-wrap { display: flex; align-items: center; gap: 18px; }
@@ -299,6 +310,8 @@
     padding: 12px 16px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; color: var(--ink);
     font-weight: 700; font-size: 13px;
   }
+  .settings-section-title { font-weight: 800; font-size: 14.5px; margin-bottom: 4px; }
+  .settings-divider { height: 1px; background: var(--line); margin: 18px 0; }
 </style>
 </head>
 <body>
@@ -314,8 +327,9 @@
 const STORAGE_KEY = "babyFeedEntries";
 const EXPORT_KEY = "babyFeedLastExport";
 const FIREBASE_CONFIG_KEY = "babyFeedFirebaseConfig";
+const BIRTH_KEY = "babyBirthIso";
 const EXPORT_REMINDER_MS = 24 * 60 * 60 * 1000;
-const APP_VERSION = "2.1";
+const APP_VERSION = "2.2";
 
 const TYPE_META = {
   breast:  { label: "Breastmilk", emoji: "🤱", color: "#FF8A73", soft: "#FFE7E0" },
@@ -358,6 +372,8 @@ let state = {
   syncConfigText: "",
   latestVersion: null,
   latestUrl: null,
+  babyBirthIso: null,
+  birthInputText: "",
   form: {
     type: "breast",
     datetime: localInputValue(new Date()),
@@ -421,6 +437,56 @@ function compareVersions(a, b) {
     if (na < nb) return -1;
   }
   return 0;
+}
+function ageInDays(birthIso, atDate) {
+  const ms = new Date(atDate) - new Date(birthIso);
+  return ms / 86400000;
+}
+function formatAge(birthIso, atDate) {
+  const totalDays = Math.floor(ageInDays(birthIso, atDate));
+  if (totalDays < 0) return null;
+  if (totalDays < 1) {
+    const hours = Math.floor((new Date(atDate) - new Date(birthIso)) / 3600000);
+    return `${hours} hour${hours===1?"":"s"} old`;
+  }
+  if (totalDays < 14) return `${totalDays} day${totalDays===1?"":"s"} old`;
+  const weeks = Math.floor(totalDays / 7);
+  const rem = totalDays % 7;
+  return `${weeks} week${weeks===1?"":"s"} old${rem ? `, ${rem} day${rem===1?"":"s"}` : ""}`;
+}
+// Approximate typical total daily milk intake (ml) by day of life.
+// Sourced from commonly-cited NHS / AAP / CDC style newborn feeding guidance.
+// This is a broad population average, not a target — every baby differs, and
+// weight gain + wet nappy count (already tracked in this app) are the more
+// reliable signs of adequate intake. Always flag concerns to your midwife/HV.
+const INTAKE_REFERENCE = [
+  { day: 0,  ml: 30  },
+  { day: 1,  ml: 60  },
+  { day: 2,  ml: 120 },
+  { day: 3,  ml: 200 },
+  { day: 4,  ml: 300 },
+  { day: 5,  ml: 400 },
+  { day: 6,  ml: 450 },
+  { day: 7,  ml: 500 },
+  { day: 10, ml: 600 },
+  { day: 14, ml: 650 },
+  { day: 21, ml: 700 },
+  { day: 28, ml: 800 },
+  { day: 42, ml: 850 },
+  { day: 60, ml: 850 },
+];
+function referenceIntakeForDay(day) {
+  if (day <= INTAKE_REFERENCE[0].day) return INTAKE_REFERENCE[0].ml;
+  const last = INTAKE_REFERENCE[INTAKE_REFERENCE.length - 1];
+  if (day >= last.day) return last.ml;
+  for (let i = 0; i < INTAKE_REFERENCE.length - 1; i++) {
+    const a = INTAKE_REFERENCE[i], b = INTAKE_REFERENCE[i+1];
+    if (day >= a.day && day <= b.day) {
+      const t = (day - a.day) / (b.day - a.day);
+      return Math.round(a.ml + t * (b.ml - a.ml));
+    }
+  }
+  return last.ml;
 }
 function csvEscape(val) {
   const s = String(val ?? "");
@@ -558,6 +624,10 @@ function loadState() {
     const exp = localStorage.getItem(EXPORT_KEY);
     if (exp) state.lastExport = exp;
   } catch (e) { console.error("Could not load export time", e); }
+  try {
+    const birth = localStorage.getItem(BIRTH_KEY);
+    if (birth) state.babyBirthIso = birth;
+  } catch (e) { console.error("Could not load birth date", e); }
 }
 function saveEntries() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.entries)); }
@@ -566,6 +636,13 @@ function saveEntries() {
 function saveExportTime(iso) {
   try { localStorage.setItem(EXPORT_KEY, iso); }
   catch (e) { console.error("Could not save export time", e); }
+}
+function setBabyBirth(iso, { fromRemote } = {}) {
+  state.babyBirthIso = iso;
+  try { localStorage.setItem(BIRTH_KEY, iso); } catch (e) {}
+  if (!fromRemote && metaRef) {
+    metaRef.child("babyBirthIso").set(iso).catch(e => console.error("Sync write failed", e));
+  }
 }
 
 /* =========================================================================
@@ -637,6 +714,7 @@ function connectFirebase(configObj, { silent } = {}) {
       const m = snap.val() || {};
       state.latestVersion = m.latestVersion || null;
       state.latestUrl = m.latestUrl || null;
+      if (m.babyBirthIso) setBabyBirth(m.babyBirthIso, { fromRemote: true });
       render();
     });
 
@@ -753,9 +831,23 @@ function renderSyncModal() {
   <div class="modal-backdrop" data-action="close-sync-backdrop">
     <div class="modal-sheet fade-in" data-action="noop">
       <div class="modal-head">
-        <div class="modal-title heading">🔗 Sync with your partner</div>
+        <div class="modal-title heading">⚙️ Settings</div>
         <button class="modal-close tap" data-action="close-sync">${ICONS.x}</button>
       </div>
+
+      <div class="settings-section-title heading">👶 Emmy's birth</div>
+      <div class="sync-steps" style="margin-bottom:10px;">
+        Set this once and her age shows up around the app, and syncs to your partner automatically once connected below.
+      </div>
+      <div class="row-flex">
+        <input type="datetime-local" data-field="birthInputText" value="${state.birthInputText || (state.babyBirthIso ? localInputValue(new Date(state.babyBirthIso)) : "")}" />
+        <button class="now-btn tap" data-action="save-birth">Save</button>
+      </div>
+      ${state.babyBirthIso ? `<div style="font-size:12px; font-weight:700; color:var(--mint); margin-top:6px;">🎂 Currently set: ${new Date(state.babyBirthIso).toLocaleString(undefined,{weekday:"short", day:"numeric", month:"short", hour:"numeric", minute:"2-digit"})}</div>` : ""}
+
+      <div class="settings-divider"></div>
+
+      <div class="settings-section-title heading">🔗 Sync with your partner</div>
 
       <div class="sync-status-pill ${state.syncConnected ? "on" : "off"}">
         ${state.syncConnected ? "🟢 Connected — changes sync automatically" : "⚪ Not connected — this device is local-only"}
@@ -808,10 +900,13 @@ function renderHeader() {
   return `
   <div class="header">
     <div class="header-row">
-      <h1 class="title heading">🍼 Little Log</h1>
+      <div>
+        <h1 class="title heading">🍼 Little Log</h1>
+        ${state.babyBirthIso ? `<div class="age-subtitle">👶 Emmy is ${formatAge(state.babyBirthIso, state.now)}</div>` : `<button class="age-subtitle age-link tap" data-action="open-sync">👶 Add her birth date →</button>`}
+      </div>
       <div class="header-actions">
-        <button class="export-btn tap sync-btn" data-action="open-sync" aria-label="Cloud sync settings">
-          🔗
+        <button class="export-btn tap sync-btn" data-action="open-sync" aria-label="Settings">
+          ⚙️
           <span class="sync-dot ${state.syncConnected ? "on" : "off"}"></span>
         </button>
         <button class="export-btn tap" data-action="import" aria-label="Import CSV">
@@ -997,12 +1092,14 @@ function renderCalendarTab() {
           const has = !!entriesByDate[k];
           const isSelected = k === state.selectedDate;
           const isToday = k === todayK;
-          return `<button class="day-cell tap ${isToday ? "today":""} ${isSelected ? "selected":""}" data-action="select-date" data-date="${k}">
-            ${d}${has ? `<span class="day-dot"></span>` : ""}
+          const isBirthday = state.babyBirthIso && k === dateKey(new Date(state.babyBirthIso));
+          return `<button class="day-cell tap ${isToday ? "today":""} ${isSelected ? "selected":""} ${isBirthday ? "birthday":""}" data-action="select-date" data-date="${k}">
+            ${isBirthday ? "🎂" : d}${has ? `<span class="day-dot"></span>` : ""}
           </button>`;
         }).join("")}
       </div>
     </div>
+    ${state.babyBirthIso && dateKey(new Date(state.babyBirthIso)) === state.selectedDate ? `<div style="text-align:center; font-size:12px; font-weight:700; color:var(--breast); margin-top:6px;">🎂 Emmy's birth day</div>` : ""}
 
     <div class="day-nav">
       <button class="nav-arrow tap" data-action="shift-day" data-delta="-1">${ICONS.chevronLeft}</button>
@@ -1092,6 +1189,30 @@ function renderSummaryTab() {
   last7Entries.forEach(e => { if (feedCounts[e.type] !== undefined) feedCounts[e.type]++; });
   const totalFeedCount = feedCounts.breast + feedCounts.formula + feedCounts.both;
 
+  // intake vs typical range for her age, since birth (capped to last 14 days)
+  let intakeSection = "";
+  if (state.babyBirthIso) {
+    const daysSinceBirth = Math.max(0, Math.floor(ageInDays(state.babyBirthIso, new Date())));
+    const spanDays = Math.min(14, daysSinceBirth + 1);
+    const intakeDays = [];
+    for (let i = spanDays - 1; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const k = dateKey(d);
+      const dayEntries = state.entries.filter(e => isoToLocalDateKey(e.datetime) === k);
+      const actualMl = dayEntries.filter(e => e.type === "formula" || e.type === "both").reduce((s,e) => s + (e.amountMl || 0), 0);
+      const ageAtDay = Math.max(0, Math.floor(ageInDays(state.babyBirthIso, d)));
+      intakeDays.push({ key: k, label: shortDate(k), actualMl, expectedMl: referenceIntakeForDay(ageAtDay) });
+    }
+    intakeSection = `
+    <div class="chart-card" style="margin-bottom:0;">
+      <div class="chart-title heading">📈 Measured intake vs typical range</div>
+      <div class="sync-steps" style="margin-bottom:10px; font-size:12px;">
+        Solid bars are formula/mixed-bottle ml logged that day; pale bars are the typical daily total for her age, based on general NHS/AAP-style newborn feeding guidance. <b>Direct breastfeeding at the breast isn't counted</b> — it can't be measured, so a low or missing bar doesn't mean she's underfed if she's mostly nursing. Weight gain and wet nappy count (above) are more reliable signs than raw ml — and your midwife or health visitor is the best judge if you're ever concerned.
+      </div>
+      ${renderComparisonBars(intakeDays)}
+    </div>`;
+  }
+
   return `
   <div class="pad">
     <div class="card-title heading" style="font-size:17px; margin-bottom:12px;">📊 Summary</div>
@@ -1123,7 +1244,7 @@ function renderSummaryTab() {
           ${["breast","formula","both"].filter(k => feedCounts[k] > 0).map(k => `
             <div class="legend-item">
               <span class="legend-swatch" style="background:${TYPE_META[k].color};"></span>
-              ${TYPE_META[k].label} (${feedCounts[k]})
+              ${TYPE_META[k].label} — ${feedCounts[k]} (${Math.round(feedCounts[k]/totalFeedCount*100)}%)
             </div>`).join("")}
         </div>
       </div>
@@ -1136,16 +1257,18 @@ function renderSummaryTab() {
         {key:"dirty", color: TYPE_META.dirtyNappy.color},
       ])}
       <div class="legend" style="flex-direction:row; gap:14px; margin-top:8px;">
-        <div class="legend-item"><span class="legend-swatch" style="background:${TYPE_META.wetNappy.color};"></span>Wet</div>
-        <div class="legend-item"><span class="legend-swatch" style="background:${TYPE_META.dirtyNappy.color};"></span>Dirty</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:${TYPE_META.wetNappy.color};"></span>Wet — ${days.reduce((s,d)=>s+d.wet,0)}</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:${TYPE_META.dirtyNappy.color};"></span>Dirty — ${days.reduce((s,d)=>s+d.dirty,0)}</div>
       </div>
     </div>
 
     ${maxPumped > 0 ? `
-    <div class="chart-card" style="margin-bottom:0;">
+    <div class="chart-card">
       <div class="chart-title heading">Pumped (ml) — last 7 days</div>
       ${renderSimpleBars(days, "pumpedMl", TYPE_META.pumping.color, maxPumped, "ml")}
     </div>` : ""}
+
+    ${intakeSection || (state.entries.length > 0 ? `<div class="empty-state">Add Emmy's birth date in ⚙️ Settings to see her intake trend vs a typical range for her age.</div>` : "")}
 
     ${state.entries.length === 0 ? `<div class="empty-state">Log a few entries to see your summary here.</div>` : ""}
   </div>`;
@@ -1159,15 +1282,20 @@ function renderStatCard(emoji, label, value, color) {
   </div>`;
 }
 
+const BAR_MAX_PX = 108;
+
 function renderStackedBars(days, series) {
   const maxTotal = Math.max(1, ...days.map(d => series.reduce((s, ser) => s + (d[ser.key]||0), 0)));
   const bars = days.map(d => {
     const total = series.reduce((s, ser) => s + (d[ser.key]||0), 0);
-    const h = total === 0 ? 0 : (total / maxTotal) * 100;
+    const hpx = total === 0 ? 0 : Math.max(4, (total / maxTotal) * BAR_MAX_PX);
     const segs = series.map(ser => d[ser.key]
       ? `<div class="bar-seg" style="height:${(d[ser.key]/Math.max(total,1))*100}%; background:${ser.color};"></div>`
       : "").join("");
-    return `<div class="bar-col" style="height:${Math.max(h, total>0?6:0)}%;" title="${d.label}: ${total}">${segs}</div>`;
+    return `<div class="bar-item">
+      <div class="bar-num ${total===0?"zero":""}">${total}</div>
+      <div class="bar-col" style="height:${hpx}px;">${segs}</div>
+    </div>`;
   }).join("");
   const labels = days.map(d => `<div class="bar-label">${d.label}</div>`).join("");
   return `<div class="bar-chart">${bars}</div><div class="bar-labels">${labels}</div>`;
@@ -1176,11 +1304,36 @@ function renderStackedBars(days, series) {
 function renderSimpleBars(days, key, color, max, unit) {
   const bars = days.map(d => {
     const v = d[key] || 0;
-    const h = max === 0 ? 0 : (v / max) * 100;
-    return `<div class="bar-col" style="height:${Math.max(h, v>0?6:0)}%;" title="${d.label}: ${v}${unit||""}"><div class="bar-seg" style="height:100%; background:${color};"></div></div>`;
+    const hpx = max === 0 ? 0 : Math.max(4, (v / max) * BAR_MAX_PX);
+    return `<div class="bar-item">
+      <div class="bar-num ${v===0?"zero":""}">${v}${v>0 ? (unit||"") : ""}</div>
+      <div class="bar-col" style="height:${hpx}px;"><div class="bar-seg" style="height:100%; background:${color};"></div></div>
+    </div>`;
   }).join("");
   const labels = days.map(d => `<div class="bar-label">${d.label}</div>`).join("");
   return `<div class="bar-chart">${bars}</div><div class="bar-labels">${labels}</div>`;
+}
+
+function renderComparisonBars(days) {
+  const REF_COLOR = "#D8D2CB";
+  const maxVal = Math.max(1, ...days.map(d => Math.max(d.actualMl, d.expectedMl)));
+  const bars = days.map(d => {
+    const actualH = d.actualMl === 0 ? 0 : Math.max(4, (d.actualMl/maxVal)*BAR_MAX_PX);
+    const expectedH = Math.max(4, (d.expectedMl/maxVal)*BAR_MAX_PX);
+    return `<div class="bar-item">
+      <div class="bar-num ${d.actualMl===0?"zero":""}">${d.actualMl || "–"}</div>
+      <div class="bar-pair">
+        <div class="bar-col" style="width:50%; height:${actualH}px; background:${TYPE_META.formula.color};"></div>
+        <div class="bar-col" style="width:50%; height:${expectedH}px; background:${REF_COLOR};"></div>
+      </div>
+    </div>`;
+  }).join("");
+  const labels = days.map(d => `<div class="bar-label">${d.label}</div>`).join("");
+  return `<div class="bar-chart">${bars}</div><div class="bar-labels">${labels}</div>
+  <div class="legend" style="flex-direction:row; gap:14px; margin-top:8px;">
+    <div class="legend-item"><span class="legend-swatch" style="background:${TYPE_META.formula.color};"></span>Logged (ml)</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:${REF_COLOR};"></span>Typical for her age</div>
+  </div>`;
 }
 
 function renderDonut(counts, total, order) {
@@ -1211,6 +1364,8 @@ function attachInputListeners() {
     el.addEventListener("input", (e) => {
       if (el.dataset.field === "syncConfigText") {
         state.syncConfigText = e.target.value;
+      } else if (el.dataset.field === "birthInputText") {
+        state.birthInputText = e.target.value;
       } else {
         state.form[el.dataset.field] = e.target.value;
       }
@@ -1275,6 +1430,13 @@ document.addEventListener("click", (e) => {
       state.showSyncPanel = false;
       render();
       break;
+    case "save-birth": {
+      const val = state.birthInputText || (state.babyBirthIso ? localInputValue(new Date(state.babyBirthIso)) : "");
+      if (!val) { showToast("Pick a date and time first"); break; }
+      setBabyBirth(new Date(val).toISOString());
+      showToast("🎂 Birth date saved");
+      break;
+    }
     case "connect-sync": {
       const parsed = parseFirebaseConfigInput(state.syncConfigText);
       if (!parsed) {
