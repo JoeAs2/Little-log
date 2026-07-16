@@ -345,6 +345,84 @@
   }
   .settings-section-title { font-weight: 800; font-size: 14.5px; margin-bottom: 4px; }
   .settings-divider { height: 1px; background: var(--line); margin: 18px 0; }
+
+  /* --- Gamification --- */
+  .game-btn { position: relative; padding: 8px 10px; font-size: 15px; }
+  .level-pill {
+    display: inline-flex; align-items: center; gap: 5px; margin-top: 3px;
+    font-size: 11px; font-weight: 800; color: var(--ink-soft);
+    background: none; border: none; padding: 0; cursor: pointer;
+  }
+  .level-pill .lvl-badge {
+    background: var(--both); color: #fff; border-radius: 999px; padding: 1px 8px; font-size: 10.5px;
+  }
+  .xp-track { width: 64px; height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; }
+  .xp-fill { height: 100%; background: var(--both); border-radius: 999px; transition: width 0.3s ease; }
+  .xp-bar-lg { width: 100%; height: 12px; border-radius: 999px; background: var(--line); overflow: hidden; margin: 8px 0; }
+  .xp-fill-lg { height: 100%; background: linear-gradient(90deg, var(--both), var(--pumping)); border-radius: 999px; transition: width 0.3s ease; }
+  .level-card {
+    background: linear-gradient(135deg, var(--both-soft), var(--pumping-soft));
+    border-radius: 16px; padding: 16px; margin-bottom: 16px; text-align: center;
+  }
+  .level-card .lvl-num { font-size: 30px; font-weight: 800; }
+  .level-card .lvl-name { font-weight: 800; font-size: 15px; color: var(--both); margin-bottom: 2px; }
+  .level-card .lvl-xp-text { font-size: 11.5px; color: var(--ink-soft); font-weight: 700; }
+  .token-pill {
+    display: inline-flex; align-items: center; gap: 5px; background: var(--formula-soft); color: #8A5A00;
+    border-radius: 999px; padding: 6px 12px; font-weight: 800; font-size: 13px; margin-bottom: 12px;
+  }
+  .achv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px; }
+  .achv-badge {
+    background: var(--card); border: 1.5px solid var(--line); border-radius: 12px; padding: 10px;
+    text-align: center; opacity: 0.4;
+  }
+  .achv-badge.unlocked { opacity: 1; border-color: var(--mint); background: var(--mint-soft); }
+  .achv-badge .achv-icon { font-size: 22px; display: block; margin-bottom: 4px; }
+  .achv-badge .achv-name { font-weight: 800; font-size: 11.5px; }
+  .achv-badge .achv-desc { font-size: 10px; color: var(--ink-soft); margin-top: 2px; }
+  .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .theme-swatch {
+    border: 2px solid var(--line); border-radius: 14px; padding: 10px; text-align: center;
+    background: var(--card); font-weight: 700; font-size: 12.5px;
+  }
+  .theme-swatch.owned.active { border-color: var(--mint); background: var(--mint-soft); }
+  .theme-swatch .swatch-preview { width: 100%; height: 24px; border-radius: 8px; margin-bottom: 6px; }
+  .theme-swatch .swatch-cost { font-size: 10.5px; color: var(--ink-soft); font-weight: 700; margin-top: 2px; }
+  .powerup-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    background: var(--card); border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px;
+  }
+  .powerup-row .powerup-info { font-size: 12.5px; }
+  .powerup-row .powerup-name { font-weight: 800; }
+  .powerup-row .powerup-desc { color: var(--ink-soft); font-size: 11px; }
+  .powerup-btn {
+    padding: 8px 12px; border-radius: 10px; border: none; background: var(--pumping); color: #fff;
+    font-weight: 800; font-size: 12px; white-space: nowrap;
+  }
+  .powerup-btn:disabled { background: var(--line); color: var(--ink-soft); }
+  .compliment-backdrop {
+    position: absolute; inset: 0; background: rgba(58,46,44,0.55); z-index: 30;
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  .compliment-card {
+    background: var(--card); border-radius: 20px; padding: 26px 22px; text-align: center; max-width: 340px;
+  }
+  .compliment-card .compliment-emoji { font-size: 34px; margin-bottom: 10px; }
+  .compliment-card .compliment-text { font-weight: 800; font-size: 15px; margin-bottom: 16px; }
+
+  /* --- Nursery Shop themes --- */
+  body[data-theme="goth"] {
+    --bg: #14111A; --card: #1F1B29; --ink: #EDE7F6; --ink-soft: #9A8FB3; --line: #322B45;
+  }
+  body[data-theme="vintage"] {
+    --bg: #1A1035; --card: #2B1854; --ink: #FDF6FF; --ink-soft: #D9B8FF; --line: #4A2E82;
+    --breast: #FF2E9A; --pumping: #2EE6FF; --formula: #FFE838; --mint: #2EFFB0;
+  }
+  body[data-theme="sleepy"] .title, body[data-theme="sleepy"] .heading {
+    filter: blur(0.4px); letter-spacing: 0.4px;
+  }
+  body[data-theme="sleepy"] .title { transform: rotate(-1deg); display: inline-block; }
+
 </style>
 </head>
 <body>
@@ -392,6 +470,109 @@ const ICONS = {
   x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
 };
 
+/* =========================================================================
+   GAMIFICATION CONFIG (Parent Quest)
+========================================================================= */
+const GAME_KEY = "babyGameState";
+const XP_PER_LOG = 10;
+
+const LEVELS = [
+  { level: 1, name: "Rookie Diaper Changer", xp: 0 },
+  { level: 2, name: "Ninja Swaddler", xp: 100 },
+  { level: 3, name: "Burp Cloth Black Belt", xp: 300 },
+  { level: 4, name: "Nap Time Negotiator", xp: 600 },
+  { level: 5, name: "Caffeine-Powered Deity", xp: 1000 },
+  { level: 6, name: "Sleep Deprivation Survivor", xp: 1500 },
+  { level: 7, name: "Master of the 3am Shuffle", xp: 2200 },
+  { level: 8, name: "Grand Wizard of White Noise", xp: 3000 },
+  { level: 9, name: "Legendary Bottle Warmer", xp: 4000 },
+  { level: 10, name: "Parenting Sage", xp: 5500 },
+];
+const LEVEL_STEP_BEYOND = 1800; // xp gap per level once past the named tiers
+
+function getLevelThreshold(levelNum) {
+  if (levelNum <= LEVELS.length) return LEVELS[levelNum - 1].xp;
+  const last = LEVELS[LEVELS.length - 1];
+  return last.xp + (levelNum - LEVELS.length) * LEVEL_STEP_BEYOND;
+}
+function getLevelName(levelNum) {
+  if (levelNum <= LEVELS.length) return LEVELS[levelNum - 1].name;
+  return `${LEVELS[LEVELS.length - 1].name} +${levelNum - LEVELS.length}`;
+}
+function computeLevelInfo(xp) {
+  let levelNum = 1;
+  while (getLevelThreshold(levelNum + 1) <= xp) levelNum++;
+  const currentFloor = getLevelThreshold(levelNum);
+  const nextFloor = getLevelThreshold(levelNum + 1);
+  const span = nextFloor - currentFloor;
+  const into = xp - currentFloor;
+  return {
+    level: levelNum,
+    name: getLevelName(levelNum),
+    xp,
+    currentFloor,
+    nextFloor,
+    progressPct: span > 0 ? Math.min(100, Math.round((into / span) * 100)) : 100,
+    xpIntoLevel: into,
+    xpForNextLevel: span,
+  };
+}
+
+const ACHIEVEMENTS = [
+  { id: "first-log", icon: "🍼", name: "First Steps", desc: "Log your first entry",
+    check: (entries) => entries.length >= 1 },
+  { id: "ten-logs", icon: "📋", name: "Getting the Hang of It", desc: "Log 10 entries",
+    check: (entries) => entries.length >= 10 },
+  { id: "century", icon: "💯", name: "Century Club", desc: "Log 100 entries",
+    check: (entries) => entries.length >= 100 },
+  { id: "midnight", icon: "🌙", name: "The Midnight Logger", desc: "Log something 12am–5am",
+    check: (entries) => entries.some(e => { const h = new Date(e.datetime).getHours(); return h >= 0 && h < 5; }) },
+  { id: "early-bird", icon: "🐦", name: "Early Bird", desc: "Log something 5am–7am",
+    check: (entries) => entries.some(e => { const h = new Date(e.datetime).getHours(); return h >= 5 && h < 7; }) },
+  { id: "marathon", icon: "🏃", name: "Marathon Parent", desc: "10 logs in a single day",
+    check: (entries) => {
+      const counts = {};
+      entries.forEach(e => { const k = dateKey(new Date(e.datetime)); counts[k] = (counts[k]||0)+1; });
+      return Object.values(counts).some(c => c >= 10);
+    } },
+  { id: "pump-pro", icon: "🥛", name: "Pumping Pro", desc: "Log 20 pumping sessions",
+    check: (entries) => entries.filter(e => e.type === "pumping").length >= 20 },
+  { id: "week-streak", icon: "🔥", name: "Consistency Champion", desc: "Log on 7 different days",
+    check: (entries) => new Set(entries.map(e => dateKey(new Date(e.datetime)))).size >= 7 },
+  { id: "backed-up", icon: "💾", name: "The Historian", desc: "Export a CSV backup",
+    check: (entries, s) => !!s.lastExport },
+  { id: "weight-watcher", icon: "⚖️", name: "Weight Watcher", desc: "Log 3 weight check-ins",
+    check: (entries, s) => (s.weights || []).length >= 3 },
+];
+
+const THEMES = [
+  { id: "", name: "Default", cost: 0, colors: ["#FFF8F0", "#FF8A73", "#6C7FE3"] },
+  { id: "goth", name: "Goth Nursery", cost: 40, colors: ["#14111A", "#1F1B29", "#EDE7F6"] },
+  { id: "vintage", name: "Vintage 80s", cost: 40, colors: ["#1A1035", "#FF2E9A", "#2EE6FF"] },
+  { id: "sleepy", name: "Sleep Deprived", cost: 20, colors: ["#FFF8F0", "#8A7B72", "#F1E4D6"] },
+];
+
+const POWERUPS = [
+  { id: "soother", name: "The Magic Soother", cost: 30, icon: "🧸",
+    desc: "Dancing pacifier icon & title for 24h" },
+  { id: "maturity", name: "Instant Maturity", cost: 15, icon: "🎓",
+    desc: `Sets ${"{name}"}'s age to \"100 years old\" for 1 minute` },
+  { id: "compliment", name: "Parental Buff", cost: 10, icon: "✨",
+    desc: "An unreasonably enthusiastic compliment" },
+];
+
+const COMPLIMENTS = [
+  "You have the energy of a thousand suns, even if you only slept for 20 minutes.",
+  "Somewhere out there, a parenting book is taking notes from YOU.",
+  "Your patience level is currently rated 'monastery monk'.",
+  "You just did a load of laundry with a baby on one hip. Legendary.",
+  "Even on 3 hours of sleep, you remembered to eat today. Hero behaviour.",
+  "That nappy change? Olympic-grade. Gold medal. No notes.",
+  "You've officially achieved 'can function on coffee fumes alone' status.",
+  "Future teenage-you-child will never know how hard you're going right now. But we do.",
+];
+
+
 const DEVELOPMENT = [
   { minDay: 0, maxDay: 6, title: "Week 1", text: "{name} may recognise familiar voices from before birth." },
   { minDay: 7, maxDay: 13, title: "Week 2", text: "Tummy time is helping {name} strengthen {pronounPossessive} neck muscles." },
@@ -438,6 +619,19 @@ const DEFAULT_FACTS = [
   "{name} grows at {pronounPossessive} own pace, and every little milestone is special."
 ];
 
+const DEFAULT_TOP_TIPS = [
+  "Always place {name} on {pronounPossessive} back to sleep to reduce the risk of SIDS.",
+  "Talk to {name} constantly; hearing your voice helps {pronounSubject} develop language skills.",
+  "Keep a consistent bedtime routine to help {name} settle into a predictable sleep pattern.",
+  "Ensure {name} has plenty of supervised tummy time while awake to build neck strength.",
+  "Keep {name}\u2019s environment calm and quiet during late-night nappy changes.",
+  "Respond to {name}\u2019s cues promptly to build trust and emotional security.",
+  "Take care of yourself too; a rested parent is better equipped to care for {name}.",
+  "Sing songs to {name} to help soothe {pronounSubject} and stimulate brain development.",
+  "Keep a spare set of clothes for {name} in your bag for unexpected leaks or spills.",
+  "Remember to enjoy these moments; {name} is only this small once."
+];
+
 const AGE_FACTS = [
   { minDay: 0, maxDay: 30, text: "{name} is born with around 300 bones, more than adults." },
   { minDay: 14, maxDay: 45, text: "{name} can focus much better on faces than {pronounSubject} could a few weeks ago." },
@@ -471,6 +665,8 @@ let state = {
   toast: null,
   confirmingDelete: null,
   showSyncPanel: false,
+  showGamePanel: false,
+  activeCompliment: null,
   syncConnected: false,
   syncStatusMsg: "",
   syncConfigText: "",
@@ -486,6 +682,7 @@ let state = {
   weightNoteInput: "",
   facts: [],
   topTips: [],
+  game: { tokensSpent: 0, ownedThemes: [""], activeTheme: "", soother: null, maturity: null, seenAchievements: [] },
   dailyMessageKind: "fact",
   headerFactIndex: 0,
   footerFactIndex: 1,
@@ -788,11 +985,11 @@ function loadFacts() {
 function loadTopTips() {
   try {
     const raw = localStorage.getItem(TOP_TIPS_KEY);
-    if (!raw) return [];
+    if (!raw) return [...DEFAULT_TOP_TIPS];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+    return Array.isArray(parsed) ? parsed.filter(Boolean) : [...DEFAULT_TOP_TIPS];
   } catch (e) {
-    return [];
+    return [...DEFAULT_TOP_TIPS];
   }
 }
 
@@ -809,6 +1006,114 @@ function saveTopTips(topTips) {
   } catch (e) {
     console.error("Could not save top tips", e);
   }
+}
+
+/* =========================================================================
+   GAMIFICATION LOGIC (Parent Quest)
+========================================================================= */
+function loadGameState() {
+  try {
+    const raw = localStorage.getItem(GAME_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return {
+      tokensSpent: parsed.tokensSpent || 0,
+      ownedThemes: Array.isArray(parsed.ownedThemes) ? parsed.ownedThemes : [""],
+      activeTheme: parsed.activeTheme || "",
+      soother: parsed.soother || null,
+      maturity: parsed.maturity || null,
+      seenAchievements: Array.isArray(parsed.seenAchievements) ? parsed.seenAchievements : [],
+    };
+  } catch (e) { return null; }
+}
+function saveGameState() {
+  try { localStorage.setItem(GAME_KEY, JSON.stringify(state.game)); }
+  catch (e) { console.error("Could not save game state", e); }
+}
+function getTotalXp() { return state.entries.length * XP_PER_LOG; }
+function getTokenBalance() { return state.entries.length - state.game.tokensSpent; }
+function getUnlockedAchievementIds() {
+  return ACHIEVEMENTS.filter(a => a.check(state.entries, state)).map(a => a.id);
+}
+function checkNewAchievements({ silent } = {}) {
+  const unlocked = getUnlockedAchievementIds();
+  const seen = state.game.seenAchievements || [];
+  const newlyUnlocked = unlocked.filter(id => !seen.includes(id));
+  if (newlyUnlocked.length === 0) return;
+  state.game.seenAchievements = [...seen, ...newlyUnlocked];
+  saveGameState();
+  if (!silent) {
+    newlyUnlocked.forEach((id, i) => {
+      const a = ACHIEVEMENTS.find(x => x.id === id);
+      if (a) setTimeout(() => showToast(`${a.icon} Achievement unlocked: ${a.name}`), i * 1800);
+    });
+    triggerConfetti();
+  }
+}
+function applyTheme(themeId) {
+  document.body.dataset.theme = themeId || "";
+}
+function equipTheme(themeId) {
+  if (!state.game.ownedThemes.includes(themeId)) return;
+  state.game.activeTheme = themeId;
+  saveGameState();
+  applyTheme(themeId);
+  render();
+}
+function buyTheme(themeId) {
+  const theme = THEMES.find(t => t.id === themeId);
+  if (!theme) return;
+  if (state.game.ownedThemes.includes(themeId)) { equipTheme(themeId); return; }
+  if (getTokenBalance() < theme.cost) { showToast("Not enough Snooze Tokens yet 😴"); return; }
+  state.game.tokensSpent += theme.cost;
+  state.game.ownedThemes = [...state.game.ownedThemes, themeId];
+  state.game.activeTheme = themeId;
+  saveGameState();
+  applyTheme(themeId);
+  showToast(`🎨 ${theme.name} unlocked & equipped!`);
+  render();
+}
+function buyPowerup(id) {
+  const p = POWERUPS.find(x => x.id === id);
+  if (!p) return;
+  if (getTokenBalance() < p.cost) { showToast("Not enough Snooze Tokens yet 😴"); return; }
+  state.game.tokensSpent += p.cost;
+  if (id === "soother") {
+    const until = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+    state.game.soother = { until };
+    applyPowerupEffects();
+    showToast("🧸 The Magic Soother is active for 24 hours!");
+  } else if (id === "maturity") {
+    const until = new Date(Date.now() + 60 * 1000).toISOString();
+    state.game.maturity = { until };
+    showToast(`🎓 ${getBabyName()} is now a very mature 100 years old (for 1 minute)`);
+  } else if (id === "compliment") {
+    state.activeCompliment = COMPLIMENTS[Math.floor(Math.random() * COMPLIMENTS.length)];
+  }
+  saveGameState();
+  render();
+}
+function applyPowerupEffects() {
+  const soother = state.game.soother;
+  const active = soother && new Date(soother.until) > new Date();
+  if (active) {
+    document.title = "🧸💃 Little Log";
+    const favicon = document.querySelector('link[rel="icon"]');
+    if (favicon) favicon.href = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 font-size=%2290%22>&#x1F9F8;</svg>';
+  } else {
+    document.title = "Little Log 🍼";
+    const favicon = document.querySelector('link[rel="icon"]');
+    if (favicon) favicon.href = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 font-size=%2290%22>&#x1F37C;</svg>';
+    if (soother) { state.game.soother = null; saveGameState(); }
+  }
+}
+function isMaturityActive() {
+  const m = state.game.maturity;
+  if (!m) return false;
+  if (new Date(m.until) > new Date()) return true;
+  state.game.maturity = null;
+  saveGameState();
+  return false;
 }
 
 function addFactFromInput() {
@@ -882,33 +1187,34 @@ function shuffleFact() {
   state.headerFactIndex = picked.header;
   state.footerFactIndex = picked.footer;
   if (state.topTips.length) {
-    state.topTipIndex = (state.topTipIndex + 1) % state.topTips.length;
+    state.topTipIndex = (state.topTipIndex + 1) % state .topTips.length;
   }
   rotateDailyMessage();
   saveFacts(state.facts);
   saveTopTips(state.topTips);
   render();
 }
-
-function getHeaderDailyFact() {
-  if (!state.facts.length) return null;
-  const index = typeof state.headerFactIndex === "number" && state.headerFactIndex >= 0
-    ? state.headerFactIndex
-    : 0;
-  return state.facts[index % state.facts.length];
-}
-function getTopTipDailyMessage() {
-  if (!state.topTips.length) return null;
-  const index = typeof state.topTipIndex === "number" && state.topTipIndex >= 0
-    ? state.topTipIndex
-    : 0;
-  return state.topTips[index % state.topTips.length];
-}
 function getCurrentDailyMessage() {
-  if (state.dailyMessageKind === "tip") {
-    return getTopTipDailyMessage() || getHeaderDailyFact();
+  // Combine facts and top tips (both Firebase-synced) into one list
+  let allMessages = [];
+  
+  if (state.facts && state.facts.length > 0) {
+    state.facts.forEach(f => allMessages.push({ text: f, kind: 'fact' }));
   }
-  return getHeaderDailyFact() || getTopTipDailyMessage();
+  
+  if (state.topTips && state.topTips.length > 0) {
+    state.topTips.forEach(t => allMessages.push({ text: t, kind: 'tip' }));
+  }
+  
+  if (allMessages.length === 0) return null;
+  
+  // Pick one at random
+  const random = allMessages[Math.floor(Math.random() * allMessages.length)];
+  
+  // Update the state so the banner shows the correct icon (💡 or ✨)
+  state.dailyMessageKind = random.kind;
+  
+  return random.text;
 }
 
 function getActiveWeeklyDev() {
@@ -1001,6 +1307,17 @@ function loadState() {
     state.topTips = loadTopTips();
     initializeFactIndices();
   } catch (e) { console.error("Could not load facts", e); state.facts = [...DEFAULT_FACTS]; state.topTips = []; initializeFactIndices(); }
+  try {
+    const saved = loadGameState();
+    if (saved) {
+      state.game = saved;
+    } else {
+      // First time this device has seen gamification — don't flood with toasts
+      // for achievements already earned from existing log history.
+      state.game.seenAchievements = getUnlockedAchievementIds();
+      saveGameState();
+    }
+  } catch (e) { console.error("Could not load game state", e); }
 }
 function saveEntries() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.entries)); }
@@ -1035,6 +1352,8 @@ let metaRef = null;
 let weightsRef = null;
 let syncFirstSnapshot = true;
 let weightsFirstSnapshot = true;
+let factsFirstSnapshot = true;
+let tipsFirstSnapshot = true;
 
 function entriesMissingFrom(target, source) {
   const sigOf = e => [e.datetime, e.type, e.side, e.amountMl, e.durationMin, (e.notes||"").trim()].join("|");
@@ -1076,25 +1395,21 @@ function connectFirebase(configObj, { silent } = {}) {
     }
     firebase.initializeApp(configObj);
     syncDb = firebase.database();
+    
+    // --- Existing Syncs ---
     syncRef = syncDb.ref("entries");
     syncFirstSnapshot = true;
-
     syncRef.on("value", snapshot => {
       const val = snapshot.val() || {};
       const remoteEntries = Object.values(val);
-
       if (syncFirstSnapshot) {
         syncFirstSnapshot = false;
         const localOnly = entriesMissingFrom(remoteEntries, state.entries);
         localOnly.forEach(e => syncRef.child(e.id).set(e));
       }
-
       state.entries = remoteEntries.sort((a,b) => new Date(b.datetime) - new Date(a.datetime));
       saveEntries();
       render();
-    }, err => {
-      console.error("Sync listener error", err);
-      showToast("Sync connection lost — check your Firebase settings");
     });
 
     metaRef = syncDb.ref("meta");
@@ -1111,15 +1426,47 @@ function connectFirebase(configObj, { silent } = {}) {
     weightsRef.on("value", snapshot => {
       const val = snapshot.val() || {};
       const remoteWeights = Object.values(val);
-
       if (weightsFirstSnapshot) {
         weightsFirstSnapshot = false;
         const localOnly = weightsMissingFrom(remoteWeights, state.weights);
         localOnly.forEach(w => weightsRef.child(w.id).set(w));
       }
-
       state.weights = remoteWeights.sort((a,b) => new Date(a.dateIso) - new Date(b.dateIso));
       saveWeights();
+      render();
+    });
+
+    // --- Fact/Tip Listeners ---
+    factsFirstSnapshot = true;
+    syncDb.ref("facts").on("value", snapshot => {
+      const val = snapshot.val() || {};
+      const remoteFacts = Object.values(val).map(o => o.text);
+      if (factsFirstSnapshot) {
+        factsFirstSnapshot = false;
+        if (remoteFacts.length === 0 && state.facts.length > 0) {
+          // Nothing in Firebase yet — seed it with what's already on this device.
+          state.facts.forEach(f => syncDb.ref("facts").push({ text: f }));
+          return; // the push above will trigger this listener again with the seeded data
+        }
+      }
+      state.facts = remoteFacts;
+      saveFacts(state.facts);
+      render();
+    });
+
+    tipsFirstSnapshot = true;
+    syncDb.ref("tips").on("value", snapshot => {
+      const val = snapshot.val() || {};
+      const remoteTips = Object.values(val).map(o => o.text);
+      if (tipsFirstSnapshot) {
+        tipsFirstSnapshot = false;
+        if (remoteTips.length === 0 && state.topTips.length > 0) {
+          state.topTips.forEach(t => syncDb.ref("tips").push({ text: t }));
+          return;
+        }
+      }
+      state.topTips = remoteTips;
+      saveTopTips(state.topTips);
       render();
     });
 
@@ -1133,18 +1480,32 @@ function connectFirebase(configObj, { silent } = {}) {
     state.syncStatusMsg = "Couldn't connect. Double-check the config you pasted and try again.";
     render();
   }
+} 
+
+// Helper functions outside of connectFirebase
+function addCloudFact(text) {
+  if (syncDb) syncDb.ref("facts").push({ text: text });
+}
+
+function addCloudTip(text) {
+  if (syncDb) syncDb.ref("tips").push({ text: text });
 }
 
 function disconnectSync() {
   if (syncRef) { try { syncRef.off(); } catch(e) {} }
   if (metaRef) { try { metaRef.off(); } catch(e) {} }
   if (weightsRef) { try { weightsRef.off(); } catch(e) {} }
+  if (syncDb) {
+    syncDb.ref("facts").off();
+    syncDb.ref("tips").off();
+  }
   syncDb = null; syncRef = null; metaRef = null; weightsRef = null;
   localStorage.removeItem(FIREBASE_CONFIG_KEY);
   state.syncConnected = false;
   state.latestVersion = null;
   state.latestUrl = null;
   showToast("Sync disconnected — back to local-only");
+  render();
 }
 
 /* =========================================================================
@@ -1169,6 +1530,7 @@ function addEntry() {
   showToast(`${TYPE_META[f.type].emoji} Logged!`);
   state.form = { type: "breast", datetime: localInputValue(new Date()), side: "both", amountMl: "", durationMin: "", notes: "" };
   render();
+  checkNewAchievements();
 }
 function deleteEntry(id) {
   state.entries = state.entries.filter(e => e.id !== id);
@@ -1197,6 +1559,7 @@ function addWeight() {
   state.weightKgInput = "";
   state.weightNoteInput = "";
   render();
+  checkNewAchievements();
 }
 function deleteWeight(id) {
   state.weights = state.weights.filter(w => w.id !== id);
@@ -1239,6 +1602,7 @@ function exportCsv() {
   state.lastExport = nowIso;
   saveExportTime(nowIso);
   showToast("CSV exported ⬇️");
+  checkNewAchievements();
 }
 
 function exportJson() {
@@ -1358,6 +1722,8 @@ function render() {
     ${renderNav()}
     ${state.toast ? `<div class="toast fade-in">${esc(state.toast)}</div>` : ""}
     ${state.showSyncPanel ? renderSyncModal() : ""}
+    ${state.showGamePanel ? renderGameModal() : ""}
+    ${state.activeCompliment ? renderComplimentModal() : ""}
   `;
   attachInputListeners();
   if (state.tab === "calendar") {
@@ -1369,6 +1735,76 @@ function render() {
   }
 }
 
+function renderGameModal() {
+  const info = computeLevelInfo(getTotalXp());
+  const tokens = getTokenBalance();
+  const unlockedIds = getUnlockedAchievementIds();
+  return `
+  <div class="modal-backdrop" data-action="close-game-backdrop">
+    <div class="modal-sheet fade-in" data-action="noop">
+      <div class="modal-head">
+        <div class="modal-title heading">🎮 Parent Quest</div>
+        <button class="modal-close tap" data-action="close-game">${ICONS.x}</button>
+      </div>
+
+      <div class="level-card">
+        <div class="lvl-num heading">Lvl ${info.level}</div>
+        <div class="lvl-name">${esc(info.name)}</div>
+        <div class="xp-bar-lg"><div class="xp-fill-lg" style="width:${info.progressPct}%"></div></div>
+        <div class="lvl-xp-text">${info.xpIntoLevel} / ${info.xpForNextLevel} XP to next level · ${state.entries.length} logs · ${info.xp} total XP</div>
+      </div>
+
+      <div class="token-pill">😴 ${tokens} Snooze Token${tokens===1?"":"s"}</div>
+
+      <div class="settings-section-title heading">🏆 Achievements</div>
+      <div class="sync-steps" style="margin-bottom:8px;">Unlocked automatically as you log — no cheating (probably).</div>
+      <div class="achv-grid">
+        ${ACHIEVEMENTS.map(a => `
+          <div class="achv-badge ${unlockedIds.includes(a.id) ? "unlocked" : ""}">
+            <span class="achv-icon">${unlockedIds.includes(a.id) ? a.icon : "🔒"}</span>
+            <div class="achv-name">${esc(a.name)}</div>
+            <div class="achv-desc">${esc(a.desc)}</div>
+          </div>`).join("")}
+      </div>
+
+      <div class="settings-divider"></div>
+
+      <div class="settings-section-title heading">🛍️ Nursery Shop</div>
+      <div class="sync-steps" style="margin-bottom:8px;">Spend Snooze Tokens (earned 1 per log) on themes and silly power-ups. Purely cosmetic — your data is unaffected either way.</div>
+      <div class="shop-grid">
+        ${THEMES.map(t => {
+          const owned = state.game.ownedThemes.includes(t.id);
+          const active = state.game.activeTheme === t.id;
+          return `
+          <button class="theme-swatch tap ${owned ? "owned" : ""} ${active ? "active" : ""}" data-action="${owned ? "equip-theme" : "buy-theme"}" data-theme="${t.id}">
+            <div class="swatch-preview" style="background:linear-gradient(90deg, ${t.colors[0]}, ${t.colors[1]}, ${t.colors[2]})"></div>
+            ${esc(t.name)}
+            <div class="swatch-cost">${active ? "✅ Equipped" : owned ? "Tap to equip" : `😴 ${t.cost}`}</div>
+          </button>`;
+        }).join("")}
+      </div>
+
+      ${POWERUPS.map(p => `
+        <div class="powerup-row">
+          <div class="powerup-info">
+            <div class="powerup-name">${p.icon} ${esc(p.name)}</div>
+            <div class="powerup-desc">${esc(getPersonalizedText(p.desc))}</div>
+          </div>
+          <button class="powerup-btn tap" data-action="buy-powerup" data-id="${p.id}" ${tokens < p.cost ? "disabled" : ""}>😴 ${p.cost}</button>
+        </div>`).join("")}
+    </div>
+  </div>`;
+}
+function renderComplimentModal() {
+  return `
+  <div class="compliment-backdrop" data-action="close-compliment">
+    <div class="compliment-card fade-in" data-action="noop">
+      <div class="compliment-emoji">✨</div>
+      <div class="compliment-text">${esc(state.activeCompliment)}</div>
+      <button class="sync-connect-btn tap" data-action="close-compliment" style="width:auto; padding:10px 22px;">Aw, thanks</button>
+    </div>
+  </div>`;
+}
 function renderSyncModal() {
   return `
   <div class="modal-backdrop" data-action="close-sync-backdrop">
@@ -1438,7 +1874,7 @@ function renderSyncModal() {
       </div>
       <div class="row-flex" style="margin-bottom:8px;">
         <input type="text" id="newTopTipInput" placeholder="Add a new top tip" style="flex:1.2; padding:10px; border-radius:12px; border:1.5px solid var(--line); font-size:14px;" />
-        <button class="now-btn tap" onclick="addTopTipFromInput()">Add</button>
+        <button class="now-btn tap" onclick="handleTipAdd()">Add</button>
       </div>
       ${state.topTips.length > 0 ? `
         <div style="display:flex; flex-direction:column; gap:6px; margin-top:4px;">
@@ -1455,7 +1891,7 @@ function renderSyncModal() {
       </div>
       <div class="row-flex" style="margin-bottom:8px;">
         <input type="text" id="newFactInput" placeholder="Add a new fact" style="flex:1.2; padding:10px; border-radius:12px; border:1.5px solid var(--line); font-size:14px;" />
-        <button class="now-btn tap" onclick="addFactFromInput()">Add</button>
+       <button class="now-btn tap" onclick="handleFactAdd()">Add</button>
       </div>
       ${state.facts.length > 0 ? `
         <div style="display:flex; flex-direction:column; gap:6px; margin-top:4px;">
@@ -1534,9 +1970,13 @@ function renderHeader() {
     <div class="header-row">
       <div>
         <h1 class="title heading">🍼 Little Log</h1>
-        ${state.babyBirthIso ? `<div class="age-subtitle">👶 ${getBabyName()} is ${formatAge(state.babyBirthIso, state.now)}</div>` : `<button class="age-subtitle age-link tap" data-action="open-sync">👶 Add ${getBabyNamePossessive()} birth date →</button>`}
+        ${state.babyBirthIso ? `<div class="age-subtitle">👶 ${getBabyName()} is ${isMaturityActive() ? "100 years old 🎓" : formatAge(state.babyBirthIso, state.now)}</div>` : `<button class="age-subtitle age-link tap" data-action="open-sync">👶 Add ${getBabyNamePossessive()} birth date →</button>`}
+        ${renderLevelPill()}
       </div>
       <div class="header-actions">
+        <button class="export-btn tap game-btn" data-action="open-game" aria-label="Parent Quest">
+          🎮
+        </button>
         <button class="export-btn tap sync-btn" data-action="open-sync" aria-label="Settings">
           ⚙️
           <span class="sync-dot ${state.syncConnected ? "on" : "off"}"></span>
@@ -1572,6 +2012,14 @@ function renderHeaderFactBanner() {
     <span class="header-fact-icon">${icon}</span>
     <span><strong>${label}</strong> — ${esc(getPersonalizedText(dailyMessage))}</span>
   </div>`;
+}
+function renderLevelPill() {
+  const info = computeLevelInfo(getTotalXp());
+  return `
+  <button class="level-pill tap" data-action="open-game">
+    <span class="lvl-badge">Lvl ${info.level}</span>
+    <span class="xp-track"><span class="xp-fill" style="width:${info.progressPct}%"></span></span>
+  </button>`;
 }
 function renderSinceCard(label, emoji, lastIso, color) {
   const mins = lastIso ? minutesBetween(lastIso, state.now.toISOString()) : null;
@@ -2166,6 +2614,28 @@ document.addEventListener("click", (e) => {
       state.showSyncPanel = false;
       render();
       break;
+    case "open-game":
+      state.showGamePanel = true;
+      render();
+      break;
+    case "close-game":
+    case "close-game-backdrop":
+      state.showGamePanel = false;
+      render();
+      break;
+    case "equip-theme":
+      equipTheme(btn.dataset.theme);
+      break;
+    case "buy-theme":
+      buyTheme(btn.dataset.theme);
+      break;
+    case "buy-powerup":
+      buyPowerup(btn.dataset.id);
+      break;
+    case "close-compliment":
+      state.activeCompliment = null;
+      render();
+      break;
     case "save-birth": {
       const val = state.birthInputText || (state.babyBirthIso ? localInputValue(new Date(state.babyBirthIso)) : "");
       if (!val) { showToast("Pick a date and time first"); break; }
@@ -2219,19 +2689,38 @@ document.addEventListener("click", (e) => {
       render();
       break;
   }
-});
+}); // <--- THIS CLOSES THE CLICK LISTENER
 
 /* =========================================================================
    INIT
 ========================================================================= */
 loadState();
+applyTheme(state.game.activeTheme);
+applyPowerupEffects();
 const savedConfig = loadFirebaseConfig();
 if (savedConfig) {
   state.syncConfigText = JSON.stringify(savedConfig, null, 2);
   connectFirebase(savedConfig, { silent: true });
 }
-setInterval(() => { state.now = new Date(); render(); }, 30000);
+setInterval(() => { state.now = new Date(); applyPowerupEffects(); render(); }, 30000);
 render();
+
+// --- NEW HELPER FUNCTIONS ---
+function handleFactAdd() {
+  const input = document.getElementById("newFactInput");
+  if (input && input.value.trim()) {
+    addCloudFact(input.value.trim());
+    input.value = "";
+  }
+}
+
+function handleTipAdd() {
+  const input = document.getElementById("newTopTipInput");
+  if (input && input.value.trim()) {
+    addCloudTip(input.value.trim());
+    input.value = "";
+  }
+}
 </script>
 </body>
 </html>
