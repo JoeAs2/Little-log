@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -7,7 +7,18 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 font-size=%2290%22>&#x1F37C;</svg>">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap');
+.home-floating-btn {
+  position: fixed; bottom: 85px; right: 20px;
+  background: var(--card); border: 1.5px solid var(--line);
+  width: 48px; height: 48px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  z-index: 99; transition: transform 0.2s ease;
+}
+.home-floating-btn:active { transform: scale(0.9); }
 
+/* Force Title to stay on one line on small mobile layouts */
+.title-wrapper { white-space: nowrap; flex-shrink: 0; }
   :root {
     --bg: #FFF8F0;
     --card: #FFFFFF;
@@ -1966,9 +1977,9 @@ function renderHeader() {
   const exportOverdue = state.entries.length > 0 && (!state.lastExport || (state.now - new Date(state.lastExport)) > EXPORT_REMINDER_MS);
 
   return `
-  <div class="header">
+ <div class="header">
     <div class="header-row">
-      <div>
+      <div class="title-wrapper">
         <h1 class="title heading">🍼 Little Log</h1>
         ${state.babyBirthIso ? `<div class="age-subtitle">👶 ${getBabyName()} is ${isMaturityActive() ? "100 years old 🎓" : formatAge(state.babyBirthIso, state.now)}</div>` : `<button class="age-subtitle age-link tap" data-action="open-sync">👶 Add ${getBabyNamePossessive()} birth date →</button>`}
         ${renderLevelPill()}
@@ -2721,6 +2732,9 @@ function handleTipAdd() {
     input.value = "";
   }
 }
+<!-- Floating Subtle Return Home Button -->
+<button class="home-floating-btn" onclick="window.parent.postMessage({ type: 'GO_HOME' }, '*')">🏡</button>
+
 </script>
 </body>
 </html>

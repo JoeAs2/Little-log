@@ -43,7 +43,6 @@
     gap: 16px;
   }
 
-  /* Header Section */
   .dash-header {
     background: linear-gradient(135deg, var(--breast-soft), var(--pumping-soft));
     border: 1px solid var(--line);
@@ -63,7 +62,6 @@
     cursor: pointer; font-size: 18px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
   }
 
-  /* Grid of Apps */
   .app-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -77,14 +75,12 @@
   .launcher-icon { font-size: 24px; }
   .launcher-label { font-size: 11px; font-weight: 800; color: var(--ink-soft); text-align: center; }
 
-  /* Dashboard Cards */
   .card {
     background: var(--card); border-radius: 22px; padding: 18px;
     border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(0,0,0,0.03);
   }
   .card-title { font-size: 16px; font-weight: 800; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
 
-  /* Quick List Styling */
   .quick-list { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
   .list-item {
     display: flex; align-items: center; justify-content: space-between;
@@ -93,12 +89,10 @@
   }
   .item-meta { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
 
-  /* Task Badges */
   .todo-badge { font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 20px; }
   .status-todo { background: var(--formula-soft); color: #B27300; }
   .status-progress { background: var(--pumping-soft); color: var(--pumping); }
 
-  /* Wishlist Design Cards */
   .wish-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
   .wish-item-card {
     flex: 0 0 140px; background: var(--bg); border-radius: 14px; padding: 10px;
@@ -106,7 +100,6 @@
   }
   .wish-link { color: var(--pumping); text-decoration: none; font-weight: 700; display: inline-block; margin-top: 6px; }
 
-  /* Fullscreen Iframe App Container */
   .app-modal {
     position: fixed; inset: 0; background: var(--bg); z-index: 100;
     display: none; flex-direction: column;
@@ -115,7 +108,6 @@
   @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
   .app-iframe { width: 100%; flex: 1; border: none; }
 
-  /* Config Settings Overlay */
   .settings-overlay {
     position: fixed; inset: 0; background: rgba(58,46,44,0.45); z-index: 101;
     display: none; align-items: center; justify-content: center; padding: 16px;
@@ -143,7 +135,6 @@
     <button class="gear-btn" onclick="openSettings()">⚙️</button>
   </div>
 
-  <!-- Main Grid Drawer -->
   <div class="app-grid">
     <div class="app-launcher" onclick="launchApp('./baby-feeding-tracker.html', 'Little Log')">
       <span class="launcher-icon">🍼</span>
@@ -157,13 +148,12 @@
       <span class="launcher-icon">📅</span>
       <span class="launcher-label heading">Calendar</span>
     </div>
-    <div class="app-launcher" onclick="alert('Coming soon: Task Boards & Projects')">
+    <div class="app-launcher" onclick="alert('Coming soon: Tasks & Projects')">
       <span class="launcher-icon">📋</span>
       <span class="launcher-label heading">Active Tasks</span>
     </div>
   </div>
 
-  <!-- Unified Quick View Calendar Widgets -->
   <div class="card">
     <div class="card-title heading">📅 Upcoming Events</div>
     <ul class="quick-list">
@@ -177,7 +167,6 @@
     </ul>
   </div>
 
-  <!-- Dynamic Priority Tasks -->
   <div class="card">
     <div class="card-title heading">📋 High Priority Tasks</div>
     <ul class="quick-list">
@@ -191,7 +180,6 @@
     </ul>
   </div>
 
-  <!-- Shared Wishlist Card -->
   <div class="card">
     <div class="card-title heading">✨ Shopping Vault & Research</div>
     <div class="wish-row">
@@ -205,12 +193,10 @@
 
 </div>
 
-<!-- The App Sandbox Frame -->
 <div id="appModal" class="app-modal">
   <iframe id="appIframe" class="app-iframe" src="" allow="microphone; camera"></iframe>
 </div>
 
-<!-- Config Overlay -->
 <div id="settingsOverlay" class="settings-overlay" onclick="closeSettings()">
   <div class="settings-card" onclick="event.stopPropagation()">
     <h3 class="heading" style="margin-top:0;">🏡 Shared DB Connection</h3>
@@ -243,11 +229,14 @@
     const modal = document.getElementById("appModal");
     const iframe = document.getElementById("appIframe");
     
+    // Save state to survive page refreshes
+    sessionStorage.setItem("activeAppUrl", url);
+    sessionStorage.setItem("activeAppName", name);
+    
     iframe.src = url;
     modal.style.display = "flex";
 
     iframe.onload = function() {
-      // Broadcast database config to the nested app
       iframe.contentWindow.postMessage({
         type: "SYNC_FIREBASE_CONFIG",
         config: config
@@ -255,13 +244,23 @@
     };
   }
 
-  // Handle subtle back-to-home signals sent by floating 🏡 icons in nested apps
   window.addEventListener("message", function(event) {
     if (event.data && event.data.type === "GO_HOME") {
       const modal = document.getElementById("appModal");
       const iframe = document.getElementById("appIframe");
       iframe.src = "";
       modal.style.display = "none";
+      sessionStorage.removeItem("activeAppUrl");
+      sessionStorage.removeItem("activeAppName");
+    }
+  });
+
+  // Check state on fresh load / page refresh
+  window.addEventListener("DOMContentLoaded", () => {
+    const savedUrl = sessionStorage.getItem("activeAppUrl");
+    const savedName = sessionStorage.getItem("activeAppName");
+    if (savedUrl && savedName) {
+      launchApp(savedUrl, savedName);
     }
   });
 
