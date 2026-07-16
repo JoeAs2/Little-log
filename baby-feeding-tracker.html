@@ -1,0 +1,2726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+<title>Little Log 🍼</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 font-size=%2290%22>&#x1F37C;</svg>">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #FFF8F0;
+    --card: #FFFFFF;
+    --ink: #3A2E2C;
+    --ink-soft: #8A7B72;
+    --line: #F1E4D6;
+    --breast: #FF8A73;
+    --breast-soft: #FFE7E0;
+    --formula: #FFB238;
+    --formula-soft: #FFF1D6;
+    --both: #B565A7;
+    --both-soft: #F4E1F0;
+    --pumping: #6C7FE3;
+    --pumping-soft: #E4E7FC;
+    --mint: #3FBF9E;
+    --mint-soft: #DFF6EF;
+    --wet: #4FB6E8;
+    --wet-soft: #E3F4FC;
+    --dirty: #8B6B4A;
+    --dirty-soft: #EFE3D6;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--bg); }
+  body {
+    font-family: 'Nunito', system-ui, sans-serif;
+    color: var(--ink);
+  }
+  .heading { font-family: 'Baloo 2', 'Nunito', sans-serif; }
+  button { font-family: inherit; cursor: pointer; }
+  input, textarea { font-family: inherit; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 10px; }
+  .tap:active { transform: scale(0.96); }
+  .fade-in { animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px);} to { opacity:1; transform: translateY(0);} }
+
+  #app {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+  }
+  .header {
+    padding: 18px 18px 14px;
+    background: linear-gradient(135deg, var(--breast-soft), var(--pumping-soft));
+    border-bottom: 1px solid var(--line);
+  }
+  .header-row { display: flex; align-items: center; justify-content: space-between; }
+  .header-actions { display: flex; gap: 6px; }
+  .title { font-size: 22px; font-weight: 800; margin: 0; }
+  .age-subtitle {
+    font-size: 12px; font-weight: 700; color: var(--ink-soft); margin-top: 2px;
+    background: none; border: none; padding: 0; text-align: left;
+  }
+  .age-link { color: var(--breast); cursor: pointer; }
+  .export-btn {
+    position: relative;
+    display: flex; align-items: center; gap: 6px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-size: 13px; font-weight: 700; color: var(--ink);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .export-btn.overdue {
+    background: #FFF0EC;
+    border: 1.5px solid var(--breast);
+  }
+  .export-dot {
+    position: absolute; top: -4px; right: -4px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--breast); border: 2px solid var(--bg);
+  }
+  .export-reminder {
+    margin-top: 8px; font-size: 11.5px; font-weight: 700; color: var(--breast);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .since-strip { display: flex; gap: 8px; margin-top: 12px; }
+  .since-card {
+    flex: 1; background: var(--card); border-radius: 14px; padding: 10px 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .since-label { font-size: 11px; font-weight: 700; color: var(--ink-soft); margin-bottom: 2px; }
+  .since-value { font-size: 19px; font-weight: 800; }
+  .since-time { font-size: 10.5px; color: var(--ink-soft); }
+
+  .body { flex: 1; overflow-y: auto; padding-bottom: 12px; }
+  .pad { padding: 16px; }
+
+  .card {
+    background: var(--card); border-radius: 18px; padding: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .card-title { font-weight: 800; font-size: 16px; margin-bottom: 10px; }
+  .field-label {
+    display: flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 700;
+    color: var(--ink-soft); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .type-btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 12px 8px; border-radius: 14px; border: 2px solid var(--line);
+    background: #fff; font-weight: 700; font-size: 14px; color: var(--ink);
+  }
+  .type-btn .emoji { font-size: 18px; }
+  .type-btn.active-breast { border-color: var(--breast); background: var(--breast-soft); }
+  .type-btn.active-formula { border-color: var(--formula); background: var(--formula-soft); }
+  .type-btn.active-both { border-color: var(--both); background: var(--both-soft); }
+  .type-btn.active-pumping { border-color: var(--pumping); background: var(--pumping-soft); }
+  .type-btn.active-wetNappy { border-color: var(--wet); background: var(--wet-soft); }
+  .type-btn.active-dirtyNappy { border-color: var(--dirty); background: var(--dirty-soft); }
+
+  .row-flex { display: flex; gap: 8px; }
+  .field-block { margin-bottom: 12px; }
+  input[type="datetime-local"], input[type="number"], textarea {
+    width: 100%; padding: 10px; border-radius: 12px; border: 1.5px solid var(--line);
+    font-size: 14px; background: #fff; color: var(--ink);
+  }
+  textarea { resize: none; }
+  .now-btn {
+    padding: 0 16px; border-radius: 12px; border: none; background: var(--mint);
+    color: #fff; font-weight: 800; font-size: 13px;
+  }
+  .side-grid { display: flex; gap: 8px; }
+  .side-btn {
+    flex: 1; padding: 8px 0; border-radius: 10px; border: 1.5px solid var(--line);
+    background: #fff; font-weight: 700; font-size: 13px; text-transform: capitalize;
+  }
+  .side-btn.active { border: 2px solid var(--breast); background: var(--breast-soft); }
+  .save-btn {
+    width: 100%; padding: 13px 0; border-radius: 14px; border: none; color: #fff;
+    font-weight: 800; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+
+  .section-title { font-weight: 800; font-size: 15px; margin: 20px 0 8px; }
+  .empty-state {
+    text-align: center; color: var(--ink-soft); font-size: 13.5px; padding: 24px 12px;
+    background: var(--card); border-radius: 14px; border: 1.5px dashed var(--line);
+  }
+  .entry-row {
+    display: flex; gap: 10px; align-items: flex-start; background: var(--card);
+    border-radius: 14px; padding: 11px 12px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .entry-icon {
+    width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center;
+    justify-content: center; font-size: 18px; flex-shrink: 0;
+  }
+  .entry-main { flex: 1; min-width: 0; }
+  .entry-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .entry-name { font-weight: 800; font-size: 14px; }
+  .entry-time { font-size: 12.5px; color: var(--ink-soft); font-weight: 700; }
+  .entry-details { font-size: 12px; color: var(--ink-soft); margin-top: 1px; }
+  .entry-notes { font-size: 12.5px; margin-top: 4px; background: var(--bg); padding: 5px 8px; border-radius: 8px; }
+  .del-btn { background: transparent; border: none; color: var(--ink-soft); padding: 4px; flex-shrink: 0; }
+  .del-confirm { display: flex; flex-direction: column; gap: 4px; }
+  .del-yes { background: #E85D5D; color: #fff; border: none; border-radius: 8px; padding: 4px 6px; }
+  .del-no { background: var(--line); color: var(--ink); border: none; border-radius: 8px; padding: 4px 6px; }
+
+  .nav {
+    display: flex; flex-shrink: 0; background: var(--card); border-top: 1px solid var(--line);
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 8;
+  }
+  .nav-btn {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 10px 0 12px; background: transparent; border: none; color: var(--ink-soft);
+  }
+  .nav-btn.active { color: var(--breast); }
+  .nav-btn svg { width: 22px; height: 22px; }
+  svg { width: 16px; height: 16px; display: inline-block; vertical-align: middle; flex-shrink: 0; }
+  .nav-btn svg { width: 22px; height: 22px; }
+  .nav-arrow svg { width: 18px; height: 18px; }
+  .export-btn svg { width: 15px; height: 15px; }
+  .save-btn svg { width: 20px; height: 20px; }
+  .del-yes svg, .del-no svg { width: 13px; height: 13px; }
+  .del-btn svg { width: 16px; height: 16px; }
+  .nav-label { font-size: 11px; font-weight: 700; }
+
+  .toast {
+    position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 999px;
+    font-size: 13px; font-weight: 700; box-shadow: 0 4px 14px rgba(0,0,0,0.2); white-space: nowrap;
+  }
+
+  .month-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .nav-arrow {
+    width: 34px; height: 34px; border-radius: 10px; border: 1.5px solid var(--line); background: #fff;
+    display: flex; align-items: center; justify-content: center; color: var(--ink);
+  }
+  .weekday-grid, .day-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; }
+  .weekday { text-align: center; font-size: 10.5px; font-weight: 800; color: var(--ink-soft); }
+  .day-cell {
+    position: relative; aspect-ratio: 1; border-radius: 10px; border: 1.5px solid transparent;
+    background: transparent; color: var(--ink); font-weight: 700; font-size: 12.5px;
+  }
+  .day-cell.today { border-color: var(--breast); }
+  .day-cell.selected { background: var(--breast); color: #fff; }
+  .day-dot {
+    position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%);
+    width: 4px; height: 4px; border-radius: 50%; background: var(--pumping);
+  }
+  .day-cell.selected .day-dot { background: #fff; }
+  .day-cell.birthday { background: var(--breast-soft); border-color: var(--breast); font-size: 14px; }
+  .day-cell.birthday.selected { background: var(--breast); }
+  .day-cell.milestone { border-color: var(--formula); }
+  .day-cell.milestone .day-dot { background: var(--formula); }
+  .milestone-banner { margin-top: 10px; padding: 12px 14px; border-radius: 14px; background: rgba(255, 182, 56, 0.12); border: 1px solid rgba(255, 178, 56, 0.35); color: var(--ink); font-size: 13px; }
+  .weight-summary { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+  .weight-summary-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .weight-summary-label { color: var(--ink-soft); font-size: 13px; }
+  .weight-summary-value { font-weight: 800; font-size: 18px; }
+  .weight-history-title { font-weight: 700; margin-bottom: 10px; }
+  .weight-history-list { display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; }
+  .weight-history-list div { background: var(--line); border-radius: 10px; padding: 8px 10px; }
+  .confetti-piece { position: fixed; top: -20px; border-radius: 3px; opacity: 0.95; z-index: 9999; animation: confetti-fall linear forwards; }
+  @keyframes confetti-fall { to { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
+  .day-nav { display: flex; align-items: center; justify-content: space-between; margin: 18px 0 10px; }
+  .day-title { font-weight: 800; font-size: 16px; }
+
+  .timeline-card { background: var(--card); border-radius: 18px; padding: 14px 10px 14px 44px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .timeline-title { font-weight: 800; font-size: 13px; margin: 0 0 8px -30px; color: var(--ink-soft); }
+  .timeline-body { position: relative; }
+  .hour-line { position: absolute; left: -34px; right: 0; border-top: 1px solid var(--line); }
+  .hour-label { position: absolute; top: -7px; left: -2px; font-size: 9px; color: var(--ink-soft); font-weight: 700; }
+  .spine { position: absolute; left: 2px; top: 0; bottom: 0; width: 2px; background: var(--line); border-radius: 2px; }
+  .tl-entry { position: absolute; display: flex; align-items: center; gap: 8px; }
+  .tl-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #fff; flex-shrink: 0; }
+  .tl-label { font-size: 10.5px; font-weight: 700; white-space: nowrap; }
+
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .stat-card { background: var(--card); border-radius: 14px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .stat-label { font-size: 11px; font-weight: 700; color: var(--ink-soft); margin-bottom: 2px; }
+  .stat-value { font-size: 20px; font-weight: 800; }
+
+  .chart-card { background: var(--card); border-radius: 18px; padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); margin-bottom: 16px; }
+  .chart-title { font-weight: 800; font-size: 14px; margin-bottom: 10px; }
+  .bar-chart { display: flex; align-items: flex-end; justify-content: space-between; height: 150px; gap: 5px; }
+  .bar-item { flex: 1; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; min-width: 0; }
+  .bar-num-stack { display: flex; flex-direction: column; align-items: center; margin-bottom: 3px; }
+  .bar-num-line { font-size: 8.5px; font-weight: 800; white-space: nowrap; line-height: 1.25; }
+  .bar-num-line.zero { color: var(--ink-soft); opacity: 0.5; }
+  .bar-col { width: 100%; display: flex; flex-direction: column-reverse; border-radius: 4px; overflow: hidden; background: var(--bg); }
+  .bar-pair { display: flex; gap: 2px; width: 100%; align-items: flex-end; }
+  .bar-seg { width: 100%; }
+  .bar-labels { display: flex; justify-content: space-between; gap: 5px; margin-top: 6px; }
+  .bar-label { flex: 1; text-align: center; font-size: 9.5px; color: var(--ink-soft); font-weight: 700; }
+
+  .donut-wrap { display: flex; align-items: center; gap: 18px; }
+  .donut {
+    width: 130px; height: 130px; border-radius: 50%; flex-shrink: 0; position: relative;
+  }
+  .donut-hole {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    width: 74px; height: 74px; border-radius: 50%; background: var(--card);
+    display: flex; align-items: center; justify-content: center; flex-direction: column;
+  }
+  .donut-hole .n { font-size: 18px; font-weight: 800; }
+  .donut-hole .l { font-size: 9px; color: var(--ink-soft); font-weight: 700; }
+  .legend { display: flex; flex-direction: column; gap: 6px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; }
+  .legend-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .dev-block-card {
+    background: var(--card); border-radius: 18px; padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    margin-bottom: 16px;
+  }
+  .dev-row { display: flex; align-items: flex-start; gap: 8px; padding: 8px 0; }
+  .dev-row + .dev-row { border-top: 1px solid var(--line); }
+  .dev-row-icon { font-size: 16px; margin-top: 2px; }
+  .dev-header { font-weight: 800; font-size: 13.5px; color: var(--ink); margin-bottom: 2px; }
+  .dev-body-text { font-size: 13px; line-height: 1.45; color: var(--ink); }
+  .header-fact-banner {
+    margin-top: 12px; padding: 10px 12px; border-radius: 14px; background: rgba(255,255,255,0.72);
+    border: 1px solid rgba(255,255,255,0.85); box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+    color: var(--ink); font-size: 12.5px; line-height: 1.45; display: flex; align-items: flex-start; gap: 8px;
+    animation: factFloat 6s ease-in-out infinite;
+  }
+  .header-fact-icon { font-size: 15px; margin-top: 1px; }
+  @keyframes factFloat {
+    0%, 100% { transform: translateY(0); opacity: 0.95; }
+    50% { transform: translateY(-3px); opacity: 1; }
+  }
+  .app-footer {
+    text-align: center; padding: 8px 12px 10px; font-size: 10.5px; color: var(--ink-soft);
+    letter-spacing: 0.2px; opacity: 0.8; background: transparent; pointer-events: none;
+  }
+  .app-footer .update-link {
+    color: var(--breast); font-weight: 800; text-decoration: none; opacity: 1;
+  }
+
+  .sync-btn { position: relative; padding: 8px 10px; font-size: 15px; }
+  .sync-dot {
+    position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 50%;
+    border: 2px solid var(--bg);
+  }
+  .sync-dot.on { background: var(--mint); }
+  .sync-dot.off { background: #C9BEB4; }
+
+  .modal-backdrop {
+    position: absolute; inset: 0; background: rgba(58,46,44,0.45); z-index: 20;
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  .modal-sheet {
+    width: 100%; max-width: 480px; background: var(--card); border-radius: 20px 20px 0 0;
+    padding: 18px 18px 22px; max-height: 85vh; overflow-y: auto;
+  }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .modal-title { font-weight: 800; font-size: 17px; }
+  .modal-close { background: var(--bg); border: none; border-radius: 10px; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; color: var(--ink); }
+  .modal-close svg { width: 14px; height: 14px; }
+  .sync-status-pill {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700;
+    padding: 6px 10px; border-radius: 999px; margin-bottom: 12px;
+  }
+  .sync-status-pill.on { background: var(--mint-soft); color: #1F8A6F; }
+  .sync-status-pill.off { background: var(--line); color: var(--ink-soft); }
+  .sync-steps { font-size: 13px; line-height: 1.55; color: var(--ink); margin-bottom: 14px; }
+  .sync-steps ol { margin: 6px 0 0; padding-left: 20px; }
+  .sync-steps li { margin-bottom: 4px; }
+  .sync-steps a { color: var(--pumping); font-weight: 700; }
+  textarea.config-input {
+    width: 100%; min-height: 90px; padding: 10px; border-radius: 12px; border: 1.5px solid var(--line);
+    font-size: 12.5px; font-family: monospace; background: var(--bg); color: var(--ink);
+  }
+  .sync-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .sync-connect-btn {
+    flex: 1; padding: 12px 0; border-radius: 12px; border: none; background: var(--mint); color: #fff;
+    font-weight: 800; font-size: 14px;
+  }
+  .sync-disconnect-btn {
+    padding: 12px 16px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; color: var(--ink);
+    font-weight: 700; font-size: 13px;
+  }
+  .settings-section-title { font-weight: 800; font-size: 14.5px; margin-bottom: 4px; }
+  .settings-divider { height: 1px; background: var(--line); margin: 18px 0; }
+
+  /* --- Gamification --- */
+  .game-btn { position: relative; padding: 8px 10px; font-size: 15px; }
+  .level-pill {
+    display: inline-flex; align-items: center; gap: 5px; margin-top: 3px;
+    font-size: 11px; font-weight: 800; color: var(--ink-soft);
+    background: none; border: none; padding: 0; cursor: pointer;
+  }
+  .level-pill .lvl-badge {
+    background: var(--both); color: #fff; border-radius: 999px; padding: 1px 8px; font-size: 10.5px;
+  }
+  .xp-track { width: 64px; height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; }
+  .xp-fill { height: 100%; background: var(--both); border-radius: 999px; transition: width 0.3s ease; }
+  .xp-bar-lg { width: 100%; height: 12px; border-radius: 999px; background: var(--line); overflow: hidden; margin: 8px 0; }
+  .xp-fill-lg { height: 100%; background: linear-gradient(90deg, var(--both), var(--pumping)); border-radius: 999px; transition: width 0.3s ease; }
+  .level-card {
+    background: linear-gradient(135deg, var(--both-soft), var(--pumping-soft));
+    border-radius: 16px; padding: 16px; margin-bottom: 16px; text-align: center;
+  }
+  .level-card .lvl-num { font-size: 30px; font-weight: 800; }
+  .level-card .lvl-name { font-weight: 800; font-size: 15px; color: var(--both); margin-bottom: 2px; }
+  .level-card .lvl-xp-text { font-size: 11.5px; color: var(--ink-soft); font-weight: 700; }
+  .token-pill {
+    display: inline-flex; align-items: center; gap: 5px; background: var(--formula-soft); color: #8A5A00;
+    border-radius: 999px; padding: 6px 12px; font-weight: 800; font-size: 13px; margin-bottom: 12px;
+  }
+  .achv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px; }
+  .achv-badge {
+    background: var(--card); border: 1.5px solid var(--line); border-radius: 12px; padding: 10px;
+    text-align: center; opacity: 0.4;
+  }
+  .achv-badge.unlocked { opacity: 1; border-color: var(--mint); background: var(--mint-soft); }
+  .achv-badge .achv-icon { font-size: 22px; display: block; margin-bottom: 4px; }
+  .achv-badge .achv-name { font-weight: 800; font-size: 11.5px; }
+  .achv-badge .achv-desc { font-size: 10px; color: var(--ink-soft); margin-top: 2px; }
+  .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .theme-swatch {
+    border: 2px solid var(--line); border-radius: 14px; padding: 10px; text-align: center;
+    background: var(--card); font-weight: 700; font-size: 12.5px;
+  }
+  .theme-swatch.owned.active { border-color: var(--mint); background: var(--mint-soft); }
+  .theme-swatch .swatch-preview { width: 100%; height: 24px; border-radius: 8px; margin-bottom: 6px; }
+  .theme-swatch .swatch-cost { font-size: 10.5px; color: var(--ink-soft); font-weight: 700; margin-top: 2px; }
+  .powerup-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    background: var(--card); border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px;
+  }
+  .powerup-row .powerup-info { font-size: 12.5px; }
+  .powerup-row .powerup-name { font-weight: 800; }
+  .powerup-row .powerup-desc { color: var(--ink-soft); font-size: 11px; }
+  .powerup-btn {
+    padding: 8px 12px; border-radius: 10px; border: none; background: var(--pumping); color: #fff;
+    font-weight: 800; font-size: 12px; white-space: nowrap;
+  }
+  .powerup-btn:disabled { background: var(--line); color: var(--ink-soft); }
+  .compliment-backdrop {
+    position: absolute; inset: 0; background: rgba(58,46,44,0.55); z-index: 30;
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  .compliment-card {
+    background: var(--card); border-radius: 20px; padding: 26px 22px; text-align: center; max-width: 340px;
+  }
+  .compliment-card .compliment-emoji { font-size: 34px; margin-bottom: 10px; }
+  .compliment-card .compliment-text { font-weight: 800; font-size: 15px; margin-bottom: 16px; }
+
+  /* --- Nursery Shop themes --- */
+  body[data-theme="goth"] {
+    --bg: #14111A; --card: #1F1B29; --ink: #EDE7F6; --ink-soft: #9A8FB3; --line: #322B45;
+  }
+  body[data-theme="vintage"] {
+    --bg: #1A1035; --card: #2B1854; --ink: #FDF6FF; --ink-soft: #D9B8FF; --line: #4A2E82;
+    --breast: #FF2E9A; --pumping: #2EE6FF; --formula: #FFE838; --mint: #2EFFB0;
+  }
+  body[data-theme="sleepy"] .title, body[data-theme="sleepy"] .heading {
+    filter: blur(0.4px); letter-spacing: 0.4px;
+  }
+  body[data-theme="sleepy"] .title { transform: rotate(-1deg); display: inline-block; }
+
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<script>
+/* =========================================================================
+   CONFIG
+========================================================================= */
+const STORAGE_KEY = "babyFeedEntries";
+const EXPORT_KEY = "babyFeedLastExport";
+const FIREBASE_CONFIG_KEY = "babyFeedFirebaseConfig";
+const BIRTH_KEY = "babyBirthIso";
+const WEIGHTS_KEY = "babyWeights";
+const FACTS_KEY = "babyFeedFacts";
+const TOP_TIPS_KEY = "babyFeedTopTips";
+const BABY_NAME_KEY = "babyName";
+const BABY_PRONOUNS_KEY = "babyPronouns";
+const EXPORT_REMINDER_MS = 24 * 60 * 60 * 1000;
+const APP_VERSION = "2.5";
+
+const TYPE_META = {
+  breast:  { label: "Breastmilk", emoji: "🤱", color: "#FF8A73", soft: "#FFE7E0" },
+  formula: { label: "Formula",    emoji: "🍼", color: "#FFB238", soft: "#FFF1D6" },
+  both:    { label: "Both",       emoji: "🍼🤱", color: "#B565A7", soft: "#F4E1F0" },
+  pumping: { label: "Pumping",    emoji: "🥛", color: "#6C7FE3", soft: "#E4E7FC" },
+  wetNappy:   { label: "Wet Nappy",   emoji: "💧", color: "#4FB6E8", soft: "#E3F4FC" },
+  dirtyNappy: { label: "Dirty Nappy", emoji: "💩", color: "#8B6B4A", soft: "#EFE3D6" },
+};
+const FEED_TYPES = ["breast", "formula", "both"];
+
+const ICONS = {
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+  bar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="13" y="8" width="3" height="10"/><rect x="19" y="5" width="0" height="0"/><path d="M13 8h4v10h-4z"/></svg>',
+  chevronLeft: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+  chevronRight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>',
+  download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 19h14"/></svg>',
+  upload: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9m0 0l-4 4m4-4l4 4M5 5h14"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M9 6V4h6v2m-8 0l1 14h8l1-14"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+  x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+};
+
+/* =========================================================================
+   GAMIFICATION CONFIG (Parent Quest)
+========================================================================= */
+const GAME_KEY = "babyGameState";
+const XP_PER_LOG = 10;
+
+const LEVELS = [
+  { level: 1, name: "Rookie Diaper Changer", xp: 0 },
+  { level: 2, name: "Ninja Swaddler", xp: 100 },
+  { level: 3, name: "Burp Cloth Black Belt", xp: 300 },
+  { level: 4, name: "Nap Time Negotiator", xp: 600 },
+  { level: 5, name: "Caffeine-Powered Deity", xp: 1000 },
+  { level: 6, name: "Sleep Deprivation Survivor", xp: 1500 },
+  { level: 7, name: "Master of the 3am Shuffle", xp: 2200 },
+  { level: 8, name: "Grand Wizard of White Noise", xp: 3000 },
+  { level: 9, name: "Legendary Bottle Warmer", xp: 4000 },
+  { level: 10, name: "Parenting Sage", xp: 5500 },
+];
+const LEVEL_STEP_BEYOND = 1800; // xp gap per level once past the named tiers
+
+function getLevelThreshold(levelNum) {
+  if (levelNum <= LEVELS.length) return LEVELS[levelNum - 1].xp;
+  const last = LEVELS[LEVELS.length - 1];
+  return last.xp + (levelNum - LEVELS.length) * LEVEL_STEP_BEYOND;
+}
+function getLevelName(levelNum) {
+  if (levelNum <= LEVELS.length) return LEVELS[levelNum - 1].name;
+  return `${LEVELS[LEVELS.length - 1].name} +${levelNum - LEVELS.length}`;
+}
+function computeLevelInfo(xp) {
+  let levelNum = 1;
+  while (getLevelThreshold(levelNum + 1) <= xp) levelNum++;
+  const currentFloor = getLevelThreshold(levelNum);
+  const nextFloor = getLevelThreshold(levelNum + 1);
+  const span = nextFloor - currentFloor;
+  const into = xp - currentFloor;
+  return {
+    level: levelNum,
+    name: getLevelName(levelNum),
+    xp,
+    currentFloor,
+    nextFloor,
+    progressPct: span > 0 ? Math.min(100, Math.round((into / span) * 100)) : 100,
+    xpIntoLevel: into,
+    xpForNextLevel: span,
+  };
+}
+
+const ACHIEVEMENTS = [
+  { id: "first-log", icon: "🍼", name: "First Steps", desc: "Log your first entry",
+    check: (entries) => entries.length >= 1 },
+  { id: "ten-logs", icon: "📋", name: "Getting the Hang of It", desc: "Log 10 entries",
+    check: (entries) => entries.length >= 10 },
+  { id: "century", icon: "💯", name: "Century Club", desc: "Log 100 entries",
+    check: (entries) => entries.length >= 100 },
+  { id: "midnight", icon: "🌙", name: "The Midnight Logger", desc: "Log something 12am–5am",
+    check: (entries) => entries.some(e => { const h = new Date(e.datetime).getHours(); return h >= 0 && h < 5; }) },
+  { id: "early-bird", icon: "🐦", name: "Early Bird", desc: "Log something 5am–7am",
+    check: (entries) => entries.some(e => { const h = new Date(e.datetime).getHours(); return h >= 5 && h < 7; }) },
+  { id: "marathon", icon: "🏃", name: "Marathon Parent", desc: "10 logs in a single day",
+    check: (entries) => {
+      const counts = {};
+      entries.forEach(e => { const k = dateKey(new Date(e.datetime)); counts[k] = (counts[k]||0)+1; });
+      return Object.values(counts).some(c => c >= 10);
+    } },
+  { id: "pump-pro", icon: "🥛", name: "Pumping Pro", desc: "Log 20 pumping sessions",
+    check: (entries) => entries.filter(e => e.type === "pumping").length >= 20 },
+  { id: "week-streak", icon: "🔥", name: "Consistency Champion", desc: "Log on 7 different days",
+    check: (entries) => new Set(entries.map(e => dateKey(new Date(e.datetime)))).size >= 7 },
+  { id: "backed-up", icon: "💾", name: "The Historian", desc: "Export a CSV backup",
+    check: (entries, s) => !!s.lastExport },
+  { id: "weight-watcher", icon: "⚖️", name: "Weight Watcher", desc: "Log 3 weight check-ins",
+    check: (entries, s) => (s.weights || []).length >= 3 },
+];
+
+const THEMES = [
+  { id: "", name: "Default", cost: 0, colors: ["#FFF8F0", "#FF8A73", "#6C7FE3"] },
+  { id: "goth", name: "Goth Nursery", cost: 40, colors: ["#14111A", "#1F1B29", "#EDE7F6"] },
+  { id: "vintage", name: "Vintage 80s", cost: 40, colors: ["#1A1035", "#FF2E9A", "#2EE6FF"] },
+  { id: "sleepy", name: "Sleep Deprived", cost: 20, colors: ["#FFF8F0", "#8A7B72", "#F1E4D6"] },
+];
+
+const POWERUPS = [
+  { id: "soother", name: "The Magic Soother", cost: 30, icon: "🧸",
+    desc: "Dancing pacifier icon & title for 24h" },
+  { id: "maturity", name: "Instant Maturity", cost: 15, icon: "🎓",
+    desc: `Sets ${"{name}"}'s age to \"100 years old\" for 1 minute` },
+  { id: "compliment", name: "Parental Buff", cost: 10, icon: "✨",
+    desc: "An unreasonably enthusiastic compliment" },
+];
+
+const COMPLIMENTS = [
+  "You have the energy of a thousand suns, even if you only slept for 20 minutes.",
+  "Somewhere out there, a parenting book is taking notes from YOU.",
+  "Your patience level is currently rated 'monastery monk'.",
+  "You just did a load of laundry with a baby on one hip. Legendary.",
+  "Even on 3 hours of sleep, you remembered to eat today. Hero behaviour.",
+  "That nappy change? Olympic-grade. Gold medal. No notes.",
+  "You've officially achieved 'can function on coffee fumes alone' status.",
+  "Future teenage-you-child will never know how hard you're going right now. But we do.",
+];
+
+
+const DEVELOPMENT = [
+  { minDay: 0, maxDay: 6, title: "Week 1", text: "{name} may recognise familiar voices from before birth." },
+  { minDay: 7, maxDay: 13, title: "Week 2", text: "Tummy time is helping {name} strengthen {pronounPossessive} neck muscles." },
+  { minDay: 14, maxDay: 20, title: "Week 3", text: "{pronounSubject} may spend longer looking at your face." },
+  { minDay: 21, maxDay: 27, title: "Week 4", text: "High-pitched, rhythmic voices catch {pronounPossessive} interest." },
+  { minDay: 28, maxDay: 35, title: "Week 5", text: "Look out for that first social smile from {name}!" },
+  { minDay: 36, maxDay: 42, title: "Week 6", text: "{pronounSubject} is starting to track moving objects with {pronounPossessive} eyes." },
+  { minDay: 43, maxDay: 50, title: "Week 7", text: "Coos and gurgles are becoming more common for {name}." },
+  { minDay: 51, maxDay: 60, title: "Week 8", text: "{pronounSubject} might start reaching for your hair or jewellery." },
+  { minDay: 61, maxDay: 70, title: "Week 9", text: "Sleep patterns may begin to settle a little more for {name}." },
+  { minDay: 71, maxDay: 80, title: "Week 10", text: "{pronounSubject} is becoming more aware of {pronounPossessive} surroundings." },
+  { minDay: 81, maxDay: 90, title: "Week 11", text: "Try playing peek-a-boo with a soft cloth for {name}." },
+  { minDay: 91, maxDay: 100, title: "Week 12", text: "Hand discovery is in full swing for {name}!" },
+  { minDay: 101, maxDay: 110, title: "Week 13", text: "{pronounSubject} can now hold {pronounPossessive} head steady when upright." },
+  { minDay: 111, maxDay: 120, title: "Week 14", text: "{pronounSubject} is learning to roll from tummy to back." },
+  { minDay: 121, maxDay: 130, title: "Week 15", text: "Babbling experiments are getting louder from {name}." },
+  { minDay: 131, maxDay: 140, title: "Week 16", text: "{pronounSubject} is starting to recognise specific people." },
+  { minDay: 141, maxDay: 150, title: "Week 17", text: "Object permanence is beginning to develop for {name}." },
+  { minDay: 151, maxDay: 160, title: "Week 18", text: "Sitting with support is getting easier for {name}." },
+  { minDay: 161, maxDay: 170, title: "Week 19", text: "{pronounSubject} might start showing preferences for certain toys." },
+  { minDay: 171, maxDay: 365, title: "Week 20+", text: "Encourage exploration through sensory play with {name}." }
+];
+
+const DEFAULT_FACTS = [
+  "{name} has around 300 bones at birth.",
+  "{name} blinks only 1–2 times per minute as a newborn.",
+  "{pronounPossessive} eyes are about 75% of their adult size.",
+  "{name} is born with a natural swimming reflex.",
+  "{pronounPossessive} heart beats faster than an adult's.",
+  "{name} often prefers high-contrast patterns.",
+  "{name} can cry without tears for a few weeks.",
+  "{name} is born with an innate grasp reflex.",
+  "{pronounPossessive} sense of smell is highly developed at birth.",
+  "{name} has more taste buds than adults.",
+  "{pronounSubject} can distinguish {pronounPossessive} mother's scent.",
+  "{name} is nearsighted at birth and focuses best at about 8–12 inches.",
+  "{name} has a specialised rooting reflex for feeding.",
+  "{pronounSubject} sleeps on average 16 hours a day.",
+  "The soft spot on {pronounPossessive} head helps protect {pronounPossessive} brain.",
+  "{pronounSubject} can taste sweet, sour, and bitter.",
+  "{pronounPossessive} rapid growth means {pronounSubject} needs frequent feeds.",
+  "{name} communicates mostly through crying.",
+  "Skin-to-skin contact helps regulate {pronounPossessive} temperature.",
+  "{name} grows at {pronounPossessive} own pace, and every little milestone is special."
+];
+
+const DEFAULT_TOP_TIPS = [
+  "Always place {name} on {pronounPossessive} back to sleep to reduce the risk of SIDS.",
+  "Talk to {name} constantly; hearing your voice helps {pronounSubject} develop language skills.",
+  "Keep a consistent bedtime routine to help {name} settle into a predictable sleep pattern.",
+  "Ensure {name} has plenty of supervised tummy time while awake to build neck strength.",
+  "Keep {name}\u2019s environment calm and quiet during late-night nappy changes.",
+  "Respond to {name}\u2019s cues promptly to build trust and emotional security.",
+  "Take care of yourself too; a rested parent is better equipped to care for {name}.",
+  "Sing songs to {name} to help soothe {pronounSubject} and stimulate brain development.",
+  "Keep a spare set of clothes for {name} in your bag for unexpected leaks or spills.",
+  "Remember to enjoy these moments; {name} is only this small once."
+];
+
+const AGE_FACTS = [
+  { minDay: 0, maxDay: 30, text: "{name} is born with around 300 bones, more than adults." },
+  { minDay: 14, maxDay: 45, text: "{name} can focus much better on faces than {pronounSubject} could a few weeks ago." },
+  { minDay: 30, maxDay: 60, text: "Many infants begin tracking moving objects more smoothly around 1 month old." },
+  { minDay: 60, maxDay: 90, text: "By 2 months, {name} may start smiling back when you smile at {pronounObject}." },
+  { minDay: 90, maxDay: 120, text: "At 3–4 months, {name} often enjoys reaching for toys with both hands." },
+  { minDay: 120, maxDay: 150, text: "Around 4–5 months, hand-to-mouth play becomes more frequent for {name}." },
+  { minDay: 150, maxDay: 210, text: "Many little ones show a lot more curiosity about textures and sounds in the first half year." },
+  { minDay: 210, maxDay: 365, text: "By the first birthday, {name} may recognise familiar routines and respond to {pronounPossessive} own name." },
+];
+
+const MILESTONES = [
+  { dayOffset: 0, title: "Birth day", icon: "🎂", text: "Welcome to the world!" },
+  { dayOffset: 30, title: "1 month", icon: "1️⃣", text: "One month already!" },
+  { dayOffset: 60, title: "2 months", icon: "🧡", text: "Two months of learning and cuddles." },
+  { dayOffset: 90, title: "3 months", icon: "🌼", text: "Three months of growing stronger each day." },
+  { dayOffset: 180, title: "6 months", icon: "🎉", text: "Half a year of tiny wins and big smiles." },
+  { dayOffset: 365, title: "1 year", icon: "🥳", text: "A whole year of firsts!" },
+];
+
+/* =========================================================================
+   STATE
+========================================================================= */
+let state = {
+  entries: [],
+  lastExport: null,
+  tab: "log",
+  selectedDate: dateKey(new Date()),
+  monthCursor: startOfMonth(new Date()),
+  now: new Date(),
+  toast: null,
+  confirmingDelete: null,
+  showSyncPanel: false,
+  showGamePanel: false,
+  activeCompliment: null,
+  syncConnected: false,
+  syncStatusMsg: "",
+  syncConfigText: "",
+  latestVersion: null,
+  latestUrl: null,
+  babyBirthIso: null,
+  babyName: "Emmy",
+  babyPronouns: "she",
+  birthInputText: "",
+  weights: [],
+  weightDateInput: "",
+  weightKgInput: "",
+  weightNoteInput: "",
+  facts: [],
+  topTips: [],
+  game: { tokensSpent: 0, ownedThemes: [""], activeTheme: "", soother: null, maturity: null, seenAchievements: [] },
+  dailyMessageKind: "fact",
+  headerFactIndex: 0,
+  footerFactIndex: 1,
+  topTipIndex: 0,
+  milestoneConfettiLast: null,
+  form: {
+    type: "breast",
+    datetime: localInputValue(new Date()),
+    side: "both",
+    amountMl: "",
+    durationMin: "",
+    notes: "",
+  },
+};
+
+/* =========================================================================
+   HELPERS
+========================================================================= */
+function pad(n) { return String(n).padStart(2, "0"); }
+
+function localInputValue(date) {
+  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+function isoToLocalDateKey(iso) {
+  const d = new Date(iso);
+  return dateKey(d);
+}
+function dateKey(date) {
+  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`;
+}
+function startOfMonth(date) { return new Date(date.getFullYear(), date.getMonth(), 1); }
+function formatTime(iso) {
+  const d = new Date(iso);
+  let h = d.getHours();
+  const m = pad(d.getMinutes());
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12; if (h === 0) h = 12;
+  return `${h}:${m} ${ampm}`;
+}
+function formatDateHeader(key) {
+  const [y,m,d] = key.split("-").map(Number);
+  const date = new Date(y, m-1, d);
+  const today = dateKey(new Date());
+  const yd = new Date(); yd.setDate(yd.getDate()-1);
+  if (key === today) return "Today";
+  if (key === dateKey(yd)) return "Yesterday";
+  return date.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+}
+function shortDate(key) {
+  const [y,m,d] = key.split("-").map(Number);
+  return new Date(y, m-1, d).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+function minutesBetween(isoA, isoB) { return Math.round((new Date(isoB) - new Date(isoA)) / 60000); }
+function formatDuration(mins) {
+  if (mins < 0) mins = 0;
+  const h = Math.floor(mins/60), m = mins % 60;
+  return h === 0 ? `${m}m` : `${h}h ${m}m`;
+}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function kgToLbOz(kg) {
+  const totalOz = kg * 35.27396195;
+  let lb = Math.floor(totalOz / 16);
+  let oz = Math.round(totalOz % 16);
+  if (oz === 16) { lb += 1; oz = 0; }
+  return `${lb}lb ${oz}oz`;
+}
+function compareVersions(a, b) {
+  const pa = String(a).split(".").map(Number);
+  const pb = String(b).split(".").map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const na = pa[i] || 0, nb = pb[i] || 0;
+    if (na > nb) return 1;
+    if (na < nb) return -1;
+  }
+  return 0;
+}
+function ageInDays(birthIso, atDate) {
+  const ms = new Date(atDate) - new Date(birthIso);
+  return ms / 86400000;
+}
+function formatAge(birthIso, atDate) {
+  const totalDays = Math.floor(ageInDays(birthIso, atDate));
+  if (totalDays < 0) return null;
+  if (totalDays < 1) {
+    const hours = Math.floor((new Date(atDate) - new Date(birthIso)) / 3600000);
+    return `${hours} hour${hours===1?"":"s"} old`;
+  }
+  if (totalDays < 14) return `${totalDays} day${totalDays===1?"":"s"} old`;
+  const weeks = Math.floor(totalDays / 7);
+  const rem = totalDays % 7;
+  return `${weeks} week${weeks===1?"":"s"} old${rem ? `, ${rem} day${rem===1?"":"s"}` : ""}`;
+}
+function getBabyProfile() {
+  const pronouns = (state.babyPronouns || "she").toLowerCase();
+  const normalized = pronouns === "he" ? "he" : pronouns === "they" ? "they" : "she";
+  return {
+    name: state.babyName || "Emmy",
+    pronoun: normalized,
+    possessive: normalized === "he" ? "his" : normalized === "they" ? "their" : "her",
+    object: normalized === "he" ? "him" : normalized === "they" ? "them" : "her",
+    reflexive: normalized === "he" ? "himself" : normalized === "they" ? "themself" : "herself",
+    possessiveName: `${state.babyName || "Emmy"}'s`
+  };
+}
+function getBabyName() { return getBabyProfile().name; }
+function getBabyNamePossessive() { return `${getBabyName()}'s`; }
+function getPersonalizedText(text) {
+  const profile = getBabyProfile();
+  if (!text || typeof text !== "string") return "";
+  let out = text
+    .replace(/\{name\}/g, profile.name)
+    .replace(/\{namePossessive\}/g, profile.possessiveName)
+    .replace(/\{pronounSubject\}/g, profile.pronoun)
+    .replace(/\{pronounPossessive\}/g, profile.possessive)
+    .replace(/\{pronounObject\}/g, profile.object)
+    .replace(/\{pronounReflexive\}/g, profile.reflexive);
+  out = out.replace(/\bNewborns\b/gi, profile.name);
+  out = out.replace(/\bBabies\b/gi, profile.name);
+  out = out.replace(/\bbabies\b/gi, profile.name);
+  out = out.replace(/\bBaby\b/gi, profile.name);
+  out = out.replace(/\bbaby\b/gi, profile.name);
+  out = out.replace(/\bher\b/gi, profile.possessive);
+  out = out.replace(/\bhis\b/gi, profile.possessive);
+  out = out.replace(/\btheir\b/gi, profile.possessive);
+  out = out.replace(/\bshe\b/gi, profile.pronoun);
+  out = out.replace(/\bhe\b/gi, profile.pronoun);
+  out = out.replace(/\bthey\b/gi, profile.pronoun);
+  out = out.replace(/\bcommunicate\b/gi, profile.pronoun === "they" ? "communicate" : "communicates");
+  out = out.replace(/\bcommunicates\b/gi, profile.pronoun === "they" ? "communicate" : "communicates");
+  return out;
+}
+// Approximate typical total daily milk intake (ml) by day of life.
+// Sourced from commonly-cited NHS / AAP / CDC style newborn feeding guidance.
+// This is a broad population average, not a target — every baby differs, and
+// weight gain + wet nappy count (already tracked in this app) are the more
+// reliable signs of adequate intake. Always flag concerns to your midwife/HV.
+const INTAKE_REFERENCE = [
+  { day: 0,  ml: 30  },
+  { day: 1,  ml: 60  },
+  { day: 2,  ml: 120 },
+  { day: 3,  ml: 200 },
+  { day: 4,  ml: 300 },
+  { day: 5,  ml: 400 },
+  { day: 6,  ml: 450 },
+  { day: 7,  ml: 500 },
+  { day: 10, ml: 600 },
+  { day: 14, ml: 650 },
+  { day: 21, ml: 700 },
+  { day: 28, ml: 800 },
+  { day: 42, ml: 850 },
+  { day: 60, ml: 850 },
+];
+function referenceIntakeForDay(day) {
+  if (day <= INTAKE_REFERENCE[0].day) return INTAKE_REFERENCE[0].ml;
+  const last = INTAKE_REFERENCE[INTAKE_REFERENCE.length - 1];
+  if (day >= last.day) return last.ml;
+  for (let i = 0; i < INTAKE_REFERENCE.length - 1; i++) {
+    const a = INTAKE_REFERENCE[i], b = INTAKE_REFERENCE[i+1];
+    if (day >= a.day && day <= b.day) {
+      const t = (day - a.day) / (b.day - a.day);
+      return Math.round(a.ml + t * (b.ml - a.ml));
+    }
+  }
+  return last.ml;
+}
+function csvEscape(val) {
+  const s = String(val ?? "");
+  if (s.includes(",") || s.includes('"') || s.includes("\n")) return `"${s.replace(/"/g,'""')}"`;
+  return s;
+}
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = "", inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i+1] === '"') { field += '"'; i++; }
+        else { inQuotes = false; }
+      } else { field += c; }
+    } else {
+      if (c === '"') inQuotes = true;
+      else if (c === ',') { row.push(field); field = ""; }
+      else if (c === '\r') { /* skip */ }
+      else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ""; }
+      else field += c;
+    }
+  }
+  if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
+  return rows.filter(r => !(r.length === 1 && r[0] === ""));
+}
+function parseImportDateTime(dateStr, timeStr) {
+  const dParts = (dateStr || "").split("-").map(Number);
+  if (dParts.length !== 3 || dParts.some(isNaN)) return null;
+  const [y, m, d] = dParts;
+  let hh = 0, mm = 0;
+  const match = (timeStr || "").trim().match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  if (match) {
+    hh = parseInt(match[1], 10);
+    mm = parseInt(match[2], 10);
+    const ampm = match[3] ? match[3].toUpperCase() : null;
+    if (ampm === "PM" && hh !== 12) hh += 12;
+    if (ampm === "AM" && hh === 12) hh = 0;
+  }
+  const dt = new Date(y, m - 1, d, hh, mm);
+  return isNaN(dt.getTime()) ? null : dt;
+}
+function parseCsvToEntries(text) {
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const rows = parseCSV(text);
+  if (rows.length < 2) return [];
+  const header = rows[0].map(h => h.trim().toLowerCase());
+  const idx = {
+    date: header.indexOf("date"),
+    time: header.indexOf("time"),
+    type: header.indexOf("type"),
+    amount: header.indexOf("amount (ml)"),
+    duration: header.indexOf("duration (min)"),
+    side: header.indexOf("side"),
+    notes: header.indexOf("notes"),
+  };
+  const labelToType = {};
+  Object.entries(TYPE_META).forEach(([k, v]) => { labelToType[v.label.toLowerCase()] = k; });
+
+  const out = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || r.every(c => c === "")) continue;
+    const typeLabel = idx.type >= 0 ? (r[idx.type] || "") : "";
+    const type = labelToType[typeLabel.trim().toLowerCase()];
+    const dt = parseImportDateTime(idx.date >= 0 ? r[idx.date] : "", idx.time >= 0 ? r[idx.time] : "");
+    if (!type || !dt) continue;
+    out.push({
+      id: uid(),
+      datetime: dt.toISOString(),
+      type,
+      side: idx.side >= 0 && r[idx.side] ? r[idx.side].toLowerCase() : null,
+      amountMl: idx.amount >= 0 && r[idx.amount] !== "" ? Number(r[idx.amount]) : null,
+      durationMin: idx.duration >= 0 && r[idx.duration] !== "" ? Number(r[idx.duration]) : null,
+      notes: idx.notes >= 0 ? (r[idx.notes] || "") : "",
+    });
+  }
+  return out;
+}
+function mergeEntries(existing, imported) {
+  const sigOf = e => [e.datetime, e.type, e.side, e.amountMl, e.durationMin, (e.notes||"").trim()].join("|");
+  const seen = new Set(existing.map(sigOf));
+  const merged = [...existing];
+  let added = 0;
+  imported.forEach(e => {
+    const sig = sigOf(e);
+    if (!seen.has(sig)) { merged.push(e); seen.add(sig); added++; }
+  });
+  merged.sort((a,b) => new Date(b.datetime) - new Date(a.datetime));
+  return { merged, added };
+}
+function handleImportFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => {
+    try {
+      const imported = parseCsvToEntries(evt.target.result);
+      if (imported.length === 0) {
+        showToast("No valid rows found in that CSV");
+        return;
+      }
+      const newOnes = entriesMissingFrom(state.entries, imported);
+      const { merged, added } = mergeEntries(state.entries, imported);
+      state.entries = merged;
+      saveEntries();
+      if (syncRef && newOnes.length > 0) {
+        newOnes.forEach(e => syncRef.child(e.id).set(e).catch(err => console.error("Sync write failed", err)));
+      }
+      showToast(added > 0 ? `Imported ${added} new ${added===1?"entry":"entries"} ✅` : "Already up to date — nothing new");
+    } catch (err) {
+      console.error("Import failed", err);
+      showToast("Import failed — check the CSV format");
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = "";
+}
+function esc(s) {
+  const d = document.createElement("div");
+  d.innerText = s ?? "";
+  return d.innerHTML;
+}
+
+function loadFacts() {
+  try {
+    const raw = localStorage.getItem(FACTS_KEY);
+    if (!raw) return [...DEFAULT_FACTS];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter(Boolean) : [...DEFAULT_FACTS];
+  } catch (e) {
+    return [...DEFAULT_FACTS];
+  }
+}
+function loadTopTips() {
+  try {
+    const raw = localStorage.getItem(TOP_TIPS_KEY);
+    if (!raw) return [...DEFAULT_TOP_TIPS];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter(Boolean) : [...DEFAULT_TOP_TIPS];
+  } catch (e) {
+    return [...DEFAULT_TOP_TIPS];
+  }
+}
+
+function saveFacts(facts) {
+  try {
+    localStorage.setItem(FACTS_KEY, JSON.stringify(facts));
+  } catch (e) {
+    console.error("Could not save facts", e);
+  }
+}
+function saveTopTips(topTips) {
+  try {
+    localStorage.setItem(TOP_TIPS_KEY, JSON.stringify(topTips));
+  } catch (e) {
+    console.error("Could not save top tips", e);
+  }
+}
+
+/* =========================================================================
+   GAMIFICATION LOGIC (Parent Quest)
+========================================================================= */
+function loadGameState() {
+  try {
+    const raw = localStorage.getItem(GAME_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return {
+      tokensSpent: parsed.tokensSpent || 0,
+      ownedThemes: Array.isArray(parsed.ownedThemes) ? parsed.ownedThemes : [""],
+      activeTheme: parsed.activeTheme || "",
+      soother: parsed.soother || null,
+      maturity: parsed.maturity || null,
+      seenAchievements: Array.isArray(parsed.seenAchievements) ? parsed.seenAchievements : [],
+    };
+  } catch (e) { return null; }
+}
+function saveGameState() {
+  try { localStorage.setItem(GAME_KEY, JSON.stringify(state.game)); }
+  catch (e) { console.error("Could not save game state", e); }
+}
+function getTotalXp() { return state.entries.length * XP_PER_LOG; }
+function getTokenBalance() { return state.entries.length - state.game.tokensSpent; }
+function getUnlockedAchievementIds() {
+  return ACHIEVEMENTS.filter(a => a.check(state.entries, state)).map(a => a.id);
+}
+function checkNewAchievements({ silent } = {}) {
+  const unlocked = getUnlockedAchievementIds();
+  const seen = state.game.seenAchievements || [];
+  const newlyUnlocked = unlocked.filter(id => !seen.includes(id));
+  if (newlyUnlocked.length === 0) return;
+  state.game.seenAchievements = [...seen, ...newlyUnlocked];
+  saveGameState();
+  if (!silent) {
+    newlyUnlocked.forEach((id, i) => {
+      const a = ACHIEVEMENTS.find(x => x.id === id);
+      if (a) setTimeout(() => showToast(`${a.icon} Achievement unlocked: ${a.name}`), i * 1800);
+    });
+    triggerConfetti();
+  }
+}
+function applyTheme(themeId) {
+  document.body.dataset.theme = themeId || "";
+}
+function equipTheme(themeId) {
+  if (!state.game.ownedThemes.includes(themeId)) return;
+  state.game.activeTheme = themeId;
+  saveGameState();
+  applyTheme(themeId);
+  render();
+}
+function buyTheme(themeId) {
+  const theme = THEMES.find(t => t.id === themeId);
+  if (!theme) return;
+  if (state.game.ownedThemes.includes(themeId)) { equipTheme(themeId); return; }
+  if (getTokenBalance() < theme.cost) { showToast("Not enough Snooze Tokens yet 😴"); return; }
+  state.game.tokensSpent += theme.cost;
+  state.game.ownedThemes = [...state.game.ownedThemes, themeId];
+  state.game.activeTheme = themeId;
+  saveGameState();
+  applyTheme(themeId);
+  showToast(`🎨 ${theme.name} unlocked & equipped!`);
+  render();
+}
+function buyPowerup(id) {
+  const p = POWERUPS.find(x => x.id === id);
+  if (!p) return;
+  if (getTokenBalance() < p.cost) { showToast("Not enough Snooze Tokens yet 😴"); return; }
+  state.game.tokensSpent += p.cost;
+  if (id === "soother") {
+    const until = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+    state.game.soother = { until };
+    applyPowerupEffects();
+    showToast("🧸 The Magic Soother is active for 24 hours!");
+  } else if (id === "maturity") {
+    const until = new Date(Date.now() + 60 * 1000).toISOString();
+    state.game.maturity = { until };
+    showToast(`🎓 ${getBabyName()} is now a very mature 100 years old (for 1 minute)`);
+  } else if (id === "compliment") {
+    state.activeCompliment = COMPLIMENTS[Math.floor(Math.random() * COMPLIMENTS.length)];
+  }
+  saveGameState();
+  render();
+}
+function applyPowerupEffects() {
+  const soother = state.game.soother;
+  const active = soother && new Date(soother.until) > new Date();
+  if (active) {
+    document.title = "🧸💃 Little Log";
+    const favicon = document.querySelector('link[rel="icon"]');
+    if (favicon) favicon.href = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 font-size=%2290%22>&#x1F9F8;</svg>';
+  } else {
+    document.title = "Little Log 🍼";
+    const favicon = document.querySelector('link[rel="icon"]');
+    if (favicon) favicon.href = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 font-size=%2290%22>&#x1F37C;</svg>';
+    if (soother) { state.game.soother = null; saveGameState(); }
+  }
+}
+function isMaturityActive() {
+  const m = state.game.maturity;
+  if (!m) return false;
+  if (new Date(m.until) > new Date()) return true;
+  state.game.maturity = null;
+  saveGameState();
+  return false;
+}
+
+function addFactFromInput() {
+  const input = document.getElementById("newFactInput");
+  const text = (input?.value || "").trim();
+  if (!text) return;
+
+  const parsedFacts = text
+    .split(",")
+    .map(item => item.trim())
+    .filter(Boolean);
+
+  if (parsedFacts.length === 0) return;
+
+  state.facts = [...parsedFacts, ...state.facts].filter(Boolean);
+  saveFacts(state.facts);
+  if (input) input.value = "";
+  shuffleFact();
+}
+function addTopTipFromInput() {
+  const input = document.getElementById("newTopTipInput");
+  const text = (input?.value || "").trim();
+  if (!text) return;
+
+  const parsedTips = text
+    .split(",")
+    .map(item => item.trim())
+    .filter(Boolean);
+
+  if (parsedTips.length === 0) return;
+
+  state.topTips = [...parsedTips, ...state.topTips].filter(Boolean);
+  saveTopTips(state.topTips);
+  if (input) input.value = "";
+  shuffleFact();
+}
+
+function pickDistinctFactIndices() {
+  if (!state.facts.length) return { header: 0, footer: 0 };
+  if (state.facts.length === 1) return { header: 0, footer: 0 };
+  let header = Math.floor(Math.random() * state.facts.length);
+  let footer = Math.floor(Math.random() * state.facts.length);
+  while (footer === header) {
+    footer = Math.floor(Math.random() * state.facts.length);
+  }
+  return { header, footer };
+}
+
+function initializeFactIndices() {
+  const picked = pickDistinctFactIndices();
+  state.headerFactIndex = picked.header;
+  state.footerFactIndex = picked.footer;
+  state.topTipIndex = 0;
+  state.dailyMessageKind = state.topTips.length && state.facts.length ? "fact" : state.topTips.length ? "tip" : "fact";
+}
+
+function rotateDailyMessage() {
+  if (!state.facts.length && !state.topTips.length) return;
+  if (state.facts.length && state.topTips.length) {
+    state.dailyMessageKind = state.dailyMessageKind === "fact" ? "tip" : "fact";
+  } else if (state.topTips.length) {
+    state.dailyMessageKind = "tip";
+  } else {
+    state.dailyMessageKind = "fact";
+  }
+}
+
+function shuffleFact() {
+  if (!state.facts.length && !state.topTips.length) return;
+  const picked = pickDistinctFactIndices();
+  state.headerFactIndex = picked.header;
+  state.footerFactIndex = picked.footer;
+  if (state.topTips.length) {
+    state.topTipIndex = (state.topTipIndex + 1) % state .topTips.length;
+  }
+  rotateDailyMessage();
+  saveFacts(state.facts);
+  saveTopTips(state.topTips);
+  render();
+}
+function getCurrentDailyMessage() {
+  // Combine facts and top tips (both Firebase-synced) into one list
+  let allMessages = [];
+  
+  if (state.facts && state.facts.length > 0) {
+    state.facts.forEach(f => allMessages.push({ text: f, kind: 'fact' }));
+  }
+  
+  if (state.topTips && state.topTips.length > 0) {
+    state.topTips.forEach(t => allMessages.push({ text: t, kind: 'tip' }));
+  }
+  
+  if (allMessages.length === 0) return null;
+  
+  // Pick one at random
+  const random = allMessages[Math.floor(Math.random() * allMessages.length)];
+  
+  // Update the state so the banner shows the correct icon (💡 or ✨)
+  state.dailyMessageKind = random.kind;
+  
+  return random.text;
+}
+
+function getActiveWeeklyDev() {
+  if (!state.babyBirthIso) return null;
+  const days = Math.max(0, Math.floor(ageInDays(state.babyBirthIso, new Date())));
+  return DEVELOPMENT.find(item => days >= item.minDay && days <= item.maxDay) || DEVELOPMENT[DEVELOPMENT.length - 1];
+}
+
+function getAgeDays() {
+  if (!state.babyBirthIso) return null;
+  return Math.max(0, Math.floor(ageInDays(state.babyBirthIso, new Date())));
+}
+
+function getActiveAgeFact() {
+  const days = getAgeDays();
+  if (days === null) return null;
+  const match = AGE_FACTS.find(item => days >= item.minDay && days <= item.maxDay);
+  return match ? match.text : AGE_FACTS[AGE_FACTS.length - 1].text;
+}
+
+function getMilestoneForDate(key) {
+  if (!state.babyBirthIso) return null;
+  const birth = new Date(state.babyBirthIso);
+  return MILESTONES.find(item => {
+    const date = new Date(birth);
+    date.setDate(date.getDate() + item.dayOffset);
+    return dateKey(date) === key;
+  }) || null;
+}
+
+function getUpcomingMilestone() {
+  const days = getAgeDays();
+  if (days === null) return null;
+  const next = MILESTONES.find(item => item.dayOffset > days);
+  if (!next) return null;
+  const birth = new Date(state.babyBirthIso);
+  const date = new Date(birth);
+  date.setDate(date.getDate() + next.dayOffset);
+  return { ...next, date };
+}
+
+function triggerConfetti() {
+  const container = document.body;
+  if (!container) return;
+  const pieces = Array.from({ length: 18 }, () => {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    const size = Math.floor(Math.random() * 7) + 6;
+    const left = Math.random() * 90 + 5;
+    const hue = Math.floor(Math.random() * 360);
+    el.style.width = `${size}px`;
+    el.style.height = `${size * 1.5}px`;
+    el.style.left = `${left}%`;
+    el.style.background = `hsl(${hue}, 85%, 60%)`;
+    el.style.animationDuration = `${Math.random() * 0.8 + 1.2}s`;
+    container.appendChild(el);
+    return el;
+  });
+  setTimeout(() => pieces.forEach(el => el.remove()), 1800);
+}
+
+/* =========================================================================
+   PERSISTENCE (localStorage)
+========================================================================= */
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) state.entries = JSON.parse(raw);
+  } catch (e) { console.error("Could not load entries", e); }
+  try {
+    const exp = localStorage.getItem(EXPORT_KEY);
+    if (exp) state.lastExport = exp;
+  } catch (e) { console.error("Could not load export time", e); }
+  try {
+    const birth = localStorage.getItem(BIRTH_KEY);
+    if (birth) state.babyBirthIso = birth;
+  } catch (e) { console.error("Could not load birth date", e); }
+  try {
+    const name = localStorage.getItem(BABY_NAME_KEY);
+    if (name) state.babyName = name;
+    const pronouns = localStorage.getItem(BABY_PRONOUNS_KEY);
+    if (pronouns) state.babyPronouns = pronouns;
+  } catch (e) { console.error("Could not load baby profile", e); }
+  try {
+    const raw = localStorage.getItem(WEIGHTS_KEY);
+    if (raw) state.weights = JSON.parse(raw);
+  } catch (e) { console.error("Could not load weights", e); }
+  try {
+    state.facts = loadFacts();
+    state.topTips = loadTopTips();
+    initializeFactIndices();
+  } catch (e) { console.error("Could not load facts", e); state.facts = [...DEFAULT_FACTS]; state.topTips = []; initializeFactIndices(); }
+  try {
+    const saved = loadGameState();
+    if (saved) {
+      state.game = saved;
+    } else {
+      // First time this device has seen gamification — don't flood with toasts
+      // for achievements already earned from existing log history.
+      state.game.seenAchievements = getUnlockedAchievementIds();
+      saveGameState();
+    }
+  } catch (e) { console.error("Could not load game state", e); }
+}
+function saveEntries() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.entries)); }
+  catch (e) { console.error("Could not save entries", e); }
+}
+function saveExportTime(iso) {
+  try { localStorage.setItem(EXPORT_KEY, iso); }
+  catch (e) { console.error("Could not save export time", e); }
+}
+function setBabyBirth(iso, { fromRemote } = {}) {
+  state.babyBirthIso = iso;
+  try { localStorage.setItem(BIRTH_KEY, iso); } catch (e) {}
+  if (!fromRemote && metaRef) {
+    metaRef.child("babyBirthIso").set(iso).catch(e => console.error("Sync write failed", e));
+  }
+}
+function saveWeights() {
+  try { localStorage.setItem(WEIGHTS_KEY, JSON.stringify(state.weights)); }
+  catch (e) { console.error("Could not save weights", e); }
+}
+function saveBabyProfile() {
+  try { localStorage.setItem(BABY_NAME_KEY, state.babyName || "Emmy"); } catch (e) {}
+  try { localStorage.setItem(BABY_PRONOUNS_KEY, state.babyPronouns || "she"); } catch (e) {}
+}
+
+/* =========================================================================
+   CLOUD SYNC (Firebase Realtime Database — shared between two devices)
+========================================================================= */
+let syncDb = null;
+let syncRef = null;
+let metaRef = null;
+let weightsRef = null;
+let syncFirstSnapshot = true;
+let weightsFirstSnapshot = true;
+let factsFirstSnapshot = true;
+let tipsFirstSnapshot = true;
+
+function entriesMissingFrom(target, source) {
+  const sigOf = e => [e.datetime, e.type, e.side, e.amountMl, e.durationMin, (e.notes||"").trim()].join("|");
+  const targetSigs = new Set(target.map(sigOf));
+  return source.filter(e => !targetSigs.has(sigOf(e)));
+}
+function weightsMissingFrom(target, source) {
+  const sigOf = w => [w.dateIso, w.kg, (w.notes||"").trim()].join("|");
+  const targetSigs = new Set(target.map(sigOf));
+  return source.filter(w => !targetSigs.has(sigOf(w)));
+}
+
+function parseFirebaseConfigInput(text) {
+  let cleaned = (text || "").trim();
+  cleaned = cleaned.replace(/^\s*(export\s+)?(const|let|var)\s+\w+\s*=\s*/, "");
+  cleaned = cleaned.replace(/;\s*$/, "");
+  try {
+    const obj = new Function("return (" + cleaned + ")")();
+    if (obj && obj.apiKey && obj.databaseURL) return obj;
+    return null;
+  } catch (e) { return null; }
+}
+
+function loadFirebaseConfig() {
+  try {
+    const raw = localStorage.getItem(FIREBASE_CONFIG_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+
+function connectFirebase(configObj, { silent } = {}) {
+  if (typeof firebase === "undefined") {
+    if (!silent) showToast("No internet connection — try again when you're online");
+    return;
+  }
+  try {
+    if (firebase.apps && firebase.apps.length) {
+      firebase.apps.forEach(a => a.delete());
+    }
+    firebase.initializeApp(configObj);
+    syncDb = firebase.database();
+    
+    // --- Existing Syncs ---
+    syncRef = syncDb.ref("entries");
+    syncFirstSnapshot = true;
+    syncRef.on("value", snapshot => {
+      const val = snapshot.val() || {};
+      const remoteEntries = Object.values(val);
+      if (syncFirstSnapshot) {
+        syncFirstSnapshot = false;
+        const localOnly = entriesMissingFrom(remoteEntries, state.entries);
+        localOnly.forEach(e => syncRef.child(e.id).set(e));
+      }
+      state.entries = remoteEntries.sort((a,b) => new Date(b.datetime) - new Date(a.datetime));
+      saveEntries();
+      render();
+    });
+
+    metaRef = syncDb.ref("meta");
+    metaRef.on("value", snap => {
+      const m = snap.val() || {};
+      state.latestVersion = m.latestVersion || null;
+      state.latestUrl = m.latestUrl || null;
+      if (m.babyBirthIso) setBabyBirth(m.babyBirthIso, { fromRemote: true });
+      render();
+    });
+
+    weightsRef = syncDb.ref("weights");
+    weightsFirstSnapshot = true;
+    weightsRef.on("value", snapshot => {
+      const val = snapshot.val() || {};
+      const remoteWeights = Object.values(val);
+      if (weightsFirstSnapshot) {
+        weightsFirstSnapshot = false;
+        const localOnly = weightsMissingFrom(remoteWeights, state.weights);
+        localOnly.forEach(w => weightsRef.child(w.id).set(w));
+      }
+      state.weights = remoteWeights.sort((a,b) => new Date(a.dateIso) - new Date(b.dateIso));
+      saveWeights();
+      render();
+    });
+
+    // --- Fact/Tip Listeners ---
+    factsFirstSnapshot = true;
+    syncDb.ref("facts").on("value", snapshot => {
+      const val = snapshot.val() || {};
+      const remoteFacts = Object.values(val).map(o => o.text);
+      if (factsFirstSnapshot) {
+        factsFirstSnapshot = false;
+        if (remoteFacts.length === 0 && state.facts.length > 0) {
+          // Nothing in Firebase yet — seed it with what's already on this device.
+          state.facts.forEach(f => syncDb.ref("facts").push({ text: f }));
+          return; // the push above will trigger this listener again with the seeded data
+        }
+      }
+      state.facts = remoteFacts;
+      saveFacts(state.facts);
+      render();
+    });
+
+    tipsFirstSnapshot = true;
+    syncDb.ref("tips").on("value", snapshot => {
+      const val = snapshot.val() || {};
+      const remoteTips = Object.values(val).map(o => o.text);
+      if (tipsFirstSnapshot) {
+        tipsFirstSnapshot = false;
+        if (remoteTips.length === 0 && state.topTips.length > 0) {
+          state.topTips.forEach(t => syncDb.ref("tips").push({ text: t }));
+          return;
+        }
+      }
+      state.topTips = remoteTips;
+      saveTopTips(state.topTips);
+      render();
+    });
+
+    localStorage.setItem(FIREBASE_CONFIG_KEY, JSON.stringify(configObj));
+    state.syncConnected = true;
+    state.syncStatusMsg = "";
+    if (!silent) showToast("Connected — syncing with your partner 🔗");
+    render();
+  } catch (e) {
+    console.error("Firebase connect failed", e);
+    state.syncStatusMsg = "Couldn't connect. Double-check the config you pasted and try again.";
+    render();
+  }
+} 
+
+// Helper functions outside of connectFirebase
+function addCloudFact(text) {
+  if (syncDb) syncDb.ref("facts").push({ text: text });
+}
+
+function addCloudTip(text) {
+  if (syncDb) syncDb.ref("tips").push({ text: text });
+}
+
+function disconnectSync() {
+  if (syncRef) { try { syncRef.off(); } catch(e) {} }
+  if (metaRef) { try { metaRef.off(); } catch(e) {} }
+  if (weightsRef) { try { weightsRef.off(); } catch(e) {} }
+  if (syncDb) {
+    syncDb.ref("facts").off();
+    syncDb.ref("tips").off();
+  }
+  syncDb = null; syncRef = null; metaRef = null; weightsRef = null;
+  localStorage.removeItem(FIREBASE_CONFIG_KEY);
+  state.syncConnected = false;
+  state.latestVersion = null;
+  state.latestUrl = null;
+  showToast("Sync disconnected — back to local-only");
+  render();
+}
+
+/* =========================================================================
+   DATA ACTIONS
+========================================================================= */
+function addEntry() {
+  const f = state.form;
+  const iso = new Date(f.datetime).toISOString();
+  const entry = {
+    id: uid(),
+    datetime: iso,
+    type: f.type,
+    side: ["breast","both","pumping"].includes(f.type) ? f.side : null,
+    amountMl: f.amountMl !== "" ? Number(f.amountMl) : null,
+    durationMin: f.durationMin !== "" ? Number(f.durationMin) : null,
+    notes: (f.notes || "").trim(),
+  };
+  state.entries.push(entry);
+  state.entries.sort((a,b) => new Date(b.datetime) - new Date(a.datetime));
+  saveEntries();
+  if (syncRef) syncRef.child(entry.id).set(entry).catch(e => console.error("Sync write failed", e));
+  showToast(`${TYPE_META[f.type].emoji} Logged!`);
+  state.form = { type: "breast", datetime: localInputValue(new Date()), side: "both", amountMl: "", durationMin: "", notes: "" };
+  render();
+  checkNewAchievements();
+}
+function deleteEntry(id) {
+  state.entries = state.entries.filter(e => e.id !== id);
+  state.confirmingDelete = null;
+  saveEntries();
+  if (syncRef) syncRef.child(id).remove().catch(e => console.error("Sync delete failed", e));
+  render();
+}
+function addWeight() {
+  const dateVal = state.weightDateInput || dateKey(new Date());
+  const kgVal = parseFloat(state.weightKgInput);
+  if (!kgVal || kgVal <= 0) { showToast("Enter a weight in kg first"); return; }
+  const [y,m,d] = dateVal.split("-").map(Number);
+  const entry = {
+    id: uid(),
+    dateIso: new Date(y, m-1, d, 12, 0, 0).toISOString(),
+    kg: kgVal,
+    notes: (state.weightNoteInput || "").trim(),
+  };
+  state.weights.push(entry);
+  state.weights.sort((a,b) => new Date(a.dateIso) - new Date(b.dateIso));
+  saveWeights();
+  if (weightsRef) weightsRef.child(entry.id).set(entry).catch(e => console.error("Sync write failed", e));
+  showToast("⚖️ Weight saved");
+  state.weightDateInput = "";
+  state.weightKgInput = "";
+  state.weightNoteInput = "";
+  render();
+  checkNewAchievements();
+}
+function deleteWeight(id) {
+  state.weights = state.weights.filter(w => w.id !== id);
+  saveWeights();
+  if (weightsRef) weightsRef.child(id).remove().catch(e => console.error("Sync delete failed", e));
+  render();
+}
+function showToast(msg) {
+  state.toast = msg;
+  render();
+  setTimeout(() => { state.toast = null; render(); }, 2000);
+}
+function exportCsv() {
+  const header = ["Date","Time","Type","Amount (ml)","Duration (min)","Side","Notes"];
+  const rows = [...state.entries]
+    .sort((a,b) => new Date(a.datetime) - new Date(b.datetime))
+    .map(e => {
+      const d = new Date(e.datetime);
+      return [
+        `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`,
+        formatTime(e.datetime),
+        TYPE_META[e.type].label,
+        e.amountMl ?? "",
+        e.durationMin ?? "",
+        e.side ?? "",
+        e.notes ?? "",
+      ];
+    });
+  const csv = [header, ...rows].map(r => r.map(csvEscape).join(",")).join("\r\n");
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `feeding-log-${dateKey(new Date())}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  const nowIso = new Date().toISOString();
+  state.lastExport = nowIso;
+  saveExportTime(nowIso);
+  showToast("CSV exported ⬇️");
+  checkNewAchievements();
+}
+
+function exportJson() {
+  const nowIso = new Date().toISOString();
+  const payload = {
+    meta: {
+      appVersion: APP_VERSION,
+      exportDate: nowIso,
+      type: "baby-tracker-backup",
+      version: "2.6",
+    },
+    birthDate: state.babyBirthIso,
+    babyProfile: {
+      name: state.babyName,
+      pronouns: state.babyPronouns,
+    },
+    entries: state.entries,
+    weights: state.weights,
+    facts: state.facts,
+    topTips: state.topTips,
+    lastExport: state.lastExport,
+    sync: {
+      connected: state.syncConnected,
+      latestVersion: state.latestVersion,
+      latestUrl: state.latestUrl,
+    }
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `baby-tracker-backup-${dateKey(new Date())}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast("JSON backup exported ⬇️");
+}
+
+function handleImportJsonFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => {
+    try {
+      const payload = parseJsonBackup(evt.target.result);
+      if (!payload) {
+        showToast("That JSON file doesn't look like a valid backup.");
+        return;
+      }
+      restoreJsonBackup(payload);
+      showToast("JSON backup restored ✅");
+      render();
+    } catch (err) {
+      console.error(err);
+      showToast("Could not restore that JSON file.");
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = "";
+}
+
+function parseJsonBackup(text) {
+  try {
+    const data = JSON.parse(text);
+    if (!data || !data.meta || data.meta.type !== "baby-tracker-backup") return null;
+    return data;
+  } catch (e) {
+    return null;
+  }
+}
+
+function restoreJsonBackup(data) {
+  if (Array.isArray(data.entries)) {
+    state.entries = data.entries;
+    saveEntries();
+  }
+  if (Array.isArray(data.weights)) {
+    state.weights = data.weights;
+    saveWeights();
+  }
+  if (Array.isArray(data.facts)) {
+    state.facts = data.facts;
+    saveFacts(state.facts);
+  }
+  if (Array.isArray(data.topTips)) {
+    state.topTips = data.topTips;
+    saveTopTips(state.topTips);
+  }
+  if (data.birthDate) {
+    state.babyBirthIso = data.birthDate;
+    try { localStorage.setItem(BIRTH_KEY, state.babyBirthIso); } catch (e) {}
+  }
+  if (data.babyProfile) {
+    if (data.babyProfile.name) state.babyName = data.babyProfile.name;
+    if (data.babyProfile.pronouns) state.babyPronouns = data.babyProfile.pronouns;
+    saveBabyProfile();
+  }
+  if (data.lastExport) {
+    state.lastExport = data.lastExport;
+    saveExportTime(state.lastExport);
+  }
+  render();
+}
+
+/* =========================================================================
+   RENDER: ROOT
+========================================================================= */
+function render() {
+  const app = document.getElementById("app");
+  app.innerHTML = `
+    ${renderHeader()}
+    <div class="body">
+      ${state.tab === "log" ? renderLogTab() : state.tab === "calendar" ? renderCalendarTab() : renderSummaryTab()}
+      ${renderFooter()}
+    </div>
+    ${renderNav()}
+    ${state.toast ? `<div class="toast fade-in">${esc(state.toast)}</div>` : ""}
+    ${state.showSyncPanel ? renderSyncModal() : ""}
+    ${state.showGamePanel ? renderGameModal() : ""}
+    ${state.activeCompliment ? renderComplimentModal() : ""}
+  `;
+  attachInputListeners();
+  if (state.tab === "calendar") {
+    const selectedMilestone = getMilestoneForDate(state.selectedDate);
+    if (selectedMilestone && state.milestoneConfettiLast !== state.selectedDate) {
+      triggerConfetti();
+      state.milestoneConfettiLast = state.selectedDate;
+    }
+  }
+}
+
+function renderGameModal() {
+  const info = computeLevelInfo(getTotalXp());
+  const tokens = getTokenBalance();
+  const unlockedIds = getUnlockedAchievementIds();
+  return `
+  <div class="modal-backdrop" data-action="close-game-backdrop">
+    <div class="modal-sheet fade-in" data-action="noop">
+      <div class="modal-head">
+        <div class="modal-title heading">🎮 Parent Quest</div>
+        <button class="modal-close tap" data-action="close-game">${ICONS.x}</button>
+      </div>
+
+      <div class="level-card">
+        <div class="lvl-num heading">Lvl ${info.level}</div>
+        <div class="lvl-name">${esc(info.name)}</div>
+        <div class="xp-bar-lg"><div class="xp-fill-lg" style="width:${info.progressPct}%"></div></div>
+        <div class="lvl-xp-text">${info.xpIntoLevel} / ${info.xpForNextLevel} XP to next level · ${state.entries.length} logs · ${info.xp} total XP</div>
+      </div>
+
+      <div class="token-pill">😴 ${tokens} Snooze Token${tokens===1?"":"s"}</div>
+
+      <div class="settings-section-title heading">🏆 Achievements</div>
+      <div class="sync-steps" style="margin-bottom:8px;">Unlocked automatically as you log — no cheating (probably).</div>
+      <div class="achv-grid">
+        ${ACHIEVEMENTS.map(a => `
+          <div class="achv-badge ${unlockedIds.includes(a.id) ? "unlocked" : ""}">
+            <span class="achv-icon">${unlockedIds.includes(a.id) ? a.icon : "🔒"}</span>
+            <div class="achv-name">${esc(a.name)}</div>
+            <div class="achv-desc">${esc(a.desc)}</div>
+          </div>`).join("")}
+      </div>
+
+      <div class="settings-divider"></div>
+
+      <div class="settings-section-title heading">🛍️ Nursery Shop</div>
+      <div class="sync-steps" style="margin-bottom:8px;">Spend Snooze Tokens (earned 1 per log) on themes and silly power-ups. Purely cosmetic — your data is unaffected either way.</div>
+      <div class="shop-grid">
+        ${THEMES.map(t => {
+          const owned = state.game.ownedThemes.includes(t.id);
+          const active = state.game.activeTheme === t.id;
+          return `
+          <button class="theme-swatch tap ${owned ? "owned" : ""} ${active ? "active" : ""}" data-action="${owned ? "equip-theme" : "buy-theme"}" data-theme="${t.id}">
+            <div class="swatch-preview" style="background:linear-gradient(90deg, ${t.colors[0]}, ${t.colors[1]}, ${t.colors[2]})"></div>
+            ${esc(t.name)}
+            <div class="swatch-cost">${active ? "✅ Equipped" : owned ? "Tap to equip" : `😴 ${t.cost}`}</div>
+          </button>`;
+        }).join("")}
+      </div>
+
+      ${POWERUPS.map(p => `
+        <div class="powerup-row">
+          <div class="powerup-info">
+            <div class="powerup-name">${p.icon} ${esc(p.name)}</div>
+            <div class="powerup-desc">${esc(getPersonalizedText(p.desc))}</div>
+          </div>
+          <button class="powerup-btn tap" data-action="buy-powerup" data-id="${p.id}" ${tokens < p.cost ? "disabled" : ""}>😴 ${p.cost}</button>
+        </div>`).join("")}
+    </div>
+  </div>`;
+}
+function renderComplimentModal() {
+  return `
+  <div class="compliment-backdrop" data-action="close-compliment">
+    <div class="compliment-card fade-in" data-action="noop">
+      <div class="compliment-emoji">✨</div>
+      <div class="compliment-text">${esc(state.activeCompliment)}</div>
+      <button class="sync-connect-btn tap" data-action="close-compliment" style="width:auto; padding:10px 22px;">Aw, thanks</button>
+    </div>
+  </div>`;
+}
+function renderSyncModal() {
+  return `
+  <div class="modal-backdrop" data-action="close-sync-backdrop">
+    <div class="modal-sheet fade-in" data-action="noop">
+      <div class="modal-head">
+        <div class="modal-title heading">⚙️ Settings</div>
+        <button class="modal-close tap" data-action="close-sync">${ICONS.x}</button>
+      </div>
+
+      <div class="settings-section-title heading">👶 Baby profile</div>
+      <div class="sync-steps" style="margin-bottom:10px;">
+        These details make the facts feel more personal and they’re used around the app too.
+      </div>
+      <div class="field-block" style="margin-bottom:10px;">
+        <div class="field-label">🪪 Name</div>
+        <input type="text" data-field="babyNameInput" value="${esc(state.babyName || "Emmy")}" placeholder="Baby's name" />
+      </div>
+      <div class="field-block" style="margin-bottom:10px;">
+        <div class="field-label">💗 Pronouns</div>
+        <div class="side-grid">
+          ${["she","he","they"].map(p => `<button class="side-btn tap ${state.babyPronouns === p ? "active" : ""}" data-action="set-pronoun" data-pronoun="${p}">${p}</button>`).join("")}
+        </div>
+      </div>
+
+      <div class="settings-section-title heading">🎂 ${getBabyNamePossessive()} birth</div>
+      <div class="sync-steps" style="margin-bottom:10px;">
+        Set this once and ${getBabyNamePossessive()} age shows up around the app, and syncs to your partner automatically once connected below.
+      </div>
+      <div class="row-flex">
+        <input type="datetime-local" data-field="birthInputText" value="${state.birthInputText || (state.babyBirthIso ? localInputValue(new Date(state.babyBirthIso)) : "")}" />
+        <button class="now-btn tap" data-action="save-birth">Save</button>
+      </div>
+      ${state.babyBirthIso ? `<div style="font-size:12px; font-weight:700; color:var(--mint); margin-top:6px;">🎂 Currently set: ${new Date(state.babyBirthIso).toLocaleString(undefined,{weekday:"short", day:"numeric", month:"short", hour:"numeric", minute:"2-digit"})}</div>` : ""}
+
+      <div class="settings-divider"></div>
+
+      <div class="settings-section-title heading">⚖️ Weight checks</div>
+      <div class="sync-steps" style="margin-bottom:10px;">
+        ${getPersonalizedText("Add a weigh-in whenever a midwife or health visitor checks {pronounObject}.")}
+      </div>
+      <div class="row-flex" style="margin-bottom:8px;">
+        <input type="date" data-field="weightDateInput" value="${state.weightDateInput || dateKey(new Date())}" style="flex:1.2;" />
+        <input type="number" step="0.01" inputmode="decimal" placeholder="kg" data-field="weightKgInput" value="${state.weightKgInput}" style="flex:0.8; padding:10px; border-radius:12px; border:1.5px solid var(--line); font-size:14px;" />
+      </div>
+      <div class="row-flex" style="margin-bottom:8px;">
+        <input type="text" placeholder="Note (optional)" data-field="weightNoteInput" value="${esc(state.weightNoteInput)}" style="flex:1; padding:10px; border-radius:12px; border:1.5px solid var(--line); font-size:14px;" />
+        <button class="now-btn tap" data-action="add-weight">Add</button>
+      </div>
+      ${state.weights.length > 0 ? `
+        <div style="display:flex; flex-direction:column; gap:6px; margin-top:4px;">
+          ${[...state.weights].sort((a,b)=>new Date(b.dateIso)-new Date(a.dateIso)).map(w => `
+            <div style="display:flex; align-items:center; justify-content:space-between; background:var(--bg); border-radius:10px; padding:8px 10px; font-size:12.5px;">
+              <div>
+                <b>${w.kg.toFixed(2)}kg</b> <span style="color:var(--ink-soft);">(${kgToLbOz(w.kg)})</span>
+                <span style="color:var(--ink-soft);"> · ${new Date(w.dateIso).toLocaleDateString(undefined,{day:"numeric",month:"short"})}</span>
+                ${w.notes ? `<div style="color:var(--ink-soft); margin-top:2px;">${esc(w.notes)}</div>` : ""}
+              </div>
+              <button class="del-btn tap" data-action="delete-weight" data-id="${w.id}">${ICONS.trash}</button>
+            </div>`).join("")}
+        </div>` : ""}
+
+      <div class="settings-divider"></div>
+
+      <div class="settings-section-title heading">💡 Top tips</div>
+      <div class="sync-steps" style="margin-bottom:10px;">
+        Add short top tips here and they’ll alternate with the facts in the banner at the top of the page.
+      </div>
+      <div class="row-flex" style="margin-bottom:8px;">
+        <input type="text" id="newTopTipInput" placeholder="Add a new top tip" style="flex:1.2; padding:10px; border-radius:12px; border:1.5px solid var(--line); font-size:14px;" />
+        <button class="now-btn tap" onclick="handleTipAdd()">Add</button>
+      </div>
+      ${state.topTips.length > 0 ? `
+        <div style="display:flex; flex-direction:column; gap:6px; margin-top:4px;">
+          ${state.topTips.map(tip => `
+            <div style="background:var(--bg); border-radius:10px; padding:10px; font-size:13px; color:var(--ink);">${esc(tip)}</div>
+          `).join("")}
+        </div>` : `<div class="empty-state">No top tips yet. Add one above to see them alternate with the facts.</div>`}
+
+      <div class="settings-divider"></div>
+
+      <div class="settings-section-title heading">✨ Baby facts</div>
+      <div class="sync-steps" style="margin-bottom:10px;">
+        Add simple baby facts here and they will show on the main log page with ${getBabyNamePossessive()} name and pronouns.
+      </div>
+      <div class="row-flex" style="margin-bottom:8px;">
+        <input type="text" id="newFactInput" placeholder="Add a new fact" style="flex:1.2; padding:10px; border-radius:12px; border:1.5px solid var(--line); font-size:14px;" />
+       <button class="now-btn tap" onclick="handleFactAdd()">Add</button>
+      </div>
+      ${state.facts.length > 0 ? `
+        <div style="display:flex; flex-direction:column; gap:6px; margin-top:4px;">
+          ${state.facts.map(fact => `
+            <div style="background:var(--bg); border-radius:10px; padding:10px; font-size:13px; color:var(--ink);">${esc(fact)}</div>
+          `).join("")}
+        </div>` : `<div class="empty-state">No facts yet. Add one above to see it on the main page.</div>`}
+
+      <div class="settings-divider"></div>
+
+      <div class="settings-section-title heading">� Backup & restore</div>
+      <div class="sync-steps" style="margin-bottom:10px;">
+        Export a full JSON backup with your entries, birth date, weight history, facts and app metadata. Restore a backup file anytime.
+      </div>
+      <div class="row-flex" style="margin-bottom:12px;">
+        <button class="export-btn tap" data-action="export-json">Export JSON</button>
+        <button class="export-btn tap" data-action="restore-json">Restore JSON</button>
+      </div>
+      <input type="file" id="importJsonFile" accept=".json,application/json" style="display:none" />
+
+      <div class="settings-divider"></div>
+
+      <div class="settings-section-title heading">�🔗 Sync with your partner</div>
+
+      <div class="sync-status-pill ${state.syncConnected ? "on" : "off"}">
+        ${state.syncConnected ? "🟢 Connected — changes sync automatically" : "⚪ Not connected — this device is local-only"}
+      </div>
+
+      <div class="sync-steps">
+        This uses <b>Firebase</b> (a free Google service built for exactly this — two people editing shared live data). One of you sets it up once, then shares the same code with the other. After that, whatever either of you logs appears on both phones within a second or two, same as the data going in.
+        <ol>
+          <li>Go to <a href="https://console.firebase.google.com" target="_blank" rel="noopener">console.firebase.google.com</a> and sign in with a Google account (either of you).</li>
+          <li>Click <b>Add project</b>, give it any name (e.g. "Emmy Feeds"), skip Google Analytics.</li>
+          <li>In the left menu, open <b>Build → Realtime Database</b>, click <b>Create Database</b>, pick any region, and start in <b>test mode</b>.</li>
+          <li>Go to <b>Rules</b> in that same Realtime Database section and set both <code>.read</code> and <code>.write</code> to <code>true</code>, then Publish. <i>(This keeps it simple — it means anyone with your exact private database link could read it, but nobody will stumble on it by accident. Fine for a private family tracker.)</i></li>
+          <li>Click the ⚙️ gear next to <b>Project Overview → Project settings</b>, scroll to "Your apps", click the <b>&lt;/&gt; (Web)</b> icon, register the app (any nickname), and it'll show you a code block starting with <code>const firebaseConfig = &#123;...&#125;</code>.</li>
+          <li>Copy that whole block and paste it below, then tap Connect. Do this on your partner's phone too, pasting the <b>same</b> config — that's what links you together.</li>
+        </ol>
+      </div>
+
+      <textarea class="config-input" data-field="syncConfigText" placeholder='const firebaseConfig = {
+  apiKey: "...",
+  authDomain: "...",
+  databaseURL: "https://...firebaseio.com",
+  projectId: "...",
+  ...
+};'>${esc(state.syncConfigText)}</textarea>
+
+      ${state.syncStatusMsg ? `<div style="color:#E85D5D; font-size:12.5px; font-weight:700; margin-top:8px;">${esc(state.syncStatusMsg)}</div>` : ""}
+
+      <div class="sync-actions">
+        <button class="sync-connect-btn tap" data-action="connect-sync">Connect</button>
+        ${state.syncConnected ? `<button class="sync-disconnect-btn tap" data-action="disconnect-sync">Disconnect</button>` : ""}
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderFooter() {
+  const updateAvailable = state.latestVersion && compareVersions(state.latestVersion, APP_VERSION) > 0;
+  return `
+  <div class="app-footer">
+    <span>v${APP_VERSION}${updateAvailable ? ` · <a href="${esc(state.latestUrl || '#')}" target="_blank" rel="noopener" class="update-link">Update available (v${esc(state.latestVersion)}) ↗</a>` : ""}</span>
+    <span>· For Kerrie and Emmy &lt;3</span>
+  </div>`;
+}
+
+/* ---- Header ---- */
+function renderHeader() {
+  const lastFeed = [...state.entries].filter(e => FEED_TYPES.includes(e.type)).sort((a,b)=>new Date(b.datetime)-new Date(a.datetime))[0];
+  const lastPump = [...state.entries].filter(e => e.type === "pumping").sort((a,b)=>new Date(b.datetime)-new Date(a.datetime))[0];
+  const exportOverdue = state.entries.length > 0 && (!state.lastExport || (state.now - new Date(state.lastExport)) > EXPORT_REMINDER_MS);
+
+  return `
+  <div class="header">
+    <div class="header-row">
+      <div>
+        <h1 class="title heading">🍼 Little Log</h1>
+        ${state.babyBirthIso ? `<div class="age-subtitle">👶 ${getBabyName()} is ${isMaturityActive() ? "100 years old 🎓" : formatAge(state.babyBirthIso, state.now)}</div>` : `<button class="age-subtitle age-link tap" data-action="open-sync">👶 Add ${getBabyNamePossessive()} birth date →</button>`}
+        ${renderLevelPill()}
+      </div>
+      <div class="header-actions">
+        <button class="export-btn tap game-btn" data-action="open-game" aria-label="Parent Quest">
+          🎮
+        </button>
+        <button class="export-btn tap sync-btn" data-action="open-sync" aria-label="Settings">
+          ⚙️
+          <span class="sync-dot ${state.syncConnected ? "on" : "off"}"></span>
+        </button>
+        <button class="export-btn tap" data-action="import" aria-label="Import CSV">
+          ${ICONS.upload} Import
+        </button>
+        <input type="file" id="importFile" accept=".csv,text/csv" style="display:none" />
+        <button class="export-btn tap ${exportOverdue ? "overdue" : ""}" data-action="export">
+          ${ICONS.download} CSV
+          ${exportOverdue ? '<span class="export-dot"></span>' : ""}
+        </button>
+      </div>
+    </div>
+    ${exportOverdue ? `
+      <div class="export-reminder fade-in">
+        ⏰ ${state.lastExport ? `Last backed up ${formatDuration(minutesBetween(state.lastExport, state.now.toISOString()))} ago` : "You haven't backed up your data yet"} — tap CSV to export
+      </div>` : ""}
+    <div class="since-strip">
+      ${renderSinceCard("Since last feed", "🍼", lastFeed?.datetime, "var(--breast)")}
+      ${renderSinceCard("Since last pump", "🥛", lastPump?.datetime, "var(--pumping)")}
+    </div>
+    ${renderHeaderFactBanner()}
+  </div>`;
+}
+function renderHeaderFactBanner() {
+  const dailyMessage = getCurrentDailyMessage();
+  if (!dailyMessage) return "";
+  const label = state.dailyMessageKind === "tip" ? "Top tip" : "Daily fact";
+  const icon = state.dailyMessageKind === "tip" ? "💡" : "✨";
+  return `
+  <div class="header-fact-banner fade-in">
+    <span class="header-fact-icon">${icon}</span>
+    <span><strong>${label}</strong> — ${esc(getPersonalizedText(dailyMessage))}</span>
+  </div>`;
+}
+function renderLevelPill() {
+  const info = computeLevelInfo(getTotalXp());
+  return `
+  <button class="level-pill tap" data-action="open-game">
+    <span class="lvl-badge">Lvl ${info.level}</span>
+    <span class="xp-track"><span class="xp-fill" style="width:${info.progressPct}%"></span></span>
+  </button>`;
+}
+function renderSinceCard(label, emoji, lastIso, color) {
+  const mins = lastIso ? minutesBetween(lastIso, state.now.toISOString()) : null;
+  return `
+  <div class="since-card">
+    <div class="since-label">${emoji} ${label}</div>
+    <div class="since-value heading" style="color:${mins===null ? 'var(--ink-soft)' : color}">${mins===null ? "—" : formatDuration(mins)}</div>
+    ${lastIso ? `<div class="since-time">at ${formatTime(lastIso)}</div>` : ""}
+  </div>`;
+}
+
+/* ---- Bottom nav ---- */
+function renderNav() {
+  const tabs = [
+    { id: "log", icon: ICONS.plus, label: "Log" },
+    { id: "calendar", icon: ICONS.calendar, label: "Calendar" },
+    { id: "summary", icon: ICONS.bar, label: "Summary" },
+  ];
+  return `<div class="nav">
+    ${tabs.map(t => `
+      <button class="nav-btn tap ${state.tab === t.id ? "active" : ""}" data-action="set-tab" data-tab="${t.id}">
+        ${t.icon}<span class="nav-label">${t.label}</span>
+      </button>`).join("")}
+  </div>`;
+}
+
+/* =========================================================================
+   LOG TAB
+========================================================================= */
+function renderLogTab() {
+  const f = state.form;
+  const todayK = dateKey(new Date());
+  const todaysEntries = state.entries.filter(e => isoToLocalDateKey(e.datetime) === todayK)
+    .sort((a,b) => new Date(b.datetime) - new Date(a.datetime));
+
+  return `
+  <div class="pad">
+    <div class="card">
+      <div class="card-title heading">Log a moment</div>
+
+      <div class="type-grid">
+        ${Object.entries(TYPE_META).map(([key, meta]) => `
+          <button class="type-btn tap ${f.type === key ? "active-"+key : ""}" data-action="set-type" data-type="${key}">
+            <span class="emoji">${meta.emoji}</span> ${meta.label}
+          </button>`).join("")}
+      </div>
+
+      <div class="field-block">
+        <div class="field-label">🕐 When</div>
+        <div class="row-flex">
+          <input type="datetime-local" data-field="datetime" value="${f.datetime}" />
+          <button class="now-btn tap" data-action="set-now">Now</button>
+        </div>
+      </div>
+
+      ${["breast","both","pumping"].includes(f.type) ? `
+      <div class="field-block">
+        <div class="field-label">💧 Side</div>
+        <div class="side-grid">
+          ${["left","right","both"].map(s => `
+            <button class="side-btn tap ${f.side === s ? "active" : ""}" data-action="set-side" data-side="${s}">${s}</button>
+          `).join("")}
+        </div>
+      </div>` : ""}
+
+      ${["breast","formula","both","pumping"].includes(f.type) ? `
+      <div class="row-flex" style="margin-bottom:12px;">
+        ${f.type !== "breast" ? `
+          <div style="flex:1;">
+            <div class="field-label">${f.type === "pumping" ? "Pumped (ml)" : "Amount (ml)"}</div>
+            <input type="number" inputmode="numeric" placeholder="e.g. 90" data-field="amountMl" value="${f.amountMl}" />
+          </div>` : ""}
+        ${f.type !== "formula" ? `
+          <div style="flex:1;">
+            <div class="field-label">Duration (min)</div>
+            <input type="number" inputmode="numeric" placeholder="e.g. 15" data-field="durationMin" value="${f.durationMin}" />
+          </div>` : ""}
+      </div>` : ""}
+
+      <div class="field-block">
+        <div class="field-label">🗒️ Notes</div>
+        <textarea rows="2" placeholder="Fussy after, spit up a little, great latch…" data-field="notes">${esc(f.notes)}</textarea>
+      </div>
+
+      <button class="save-btn tap" data-action="save" aria-label="Save entry" style="background:${TYPE_META[f.type].color}; box-shadow:0 4px 12px ${TYPE_META[f.type].color}55;">
+        ${ICONS.check}
+      </button>
+    </div>
+
+    ${renderDevelopmentBlock()}
+
+    <div class="section-title heading">Today · ${todaysEntries.length} ${todaysEntries.length === 1 ? "entry" : "entries"}</div>
+    ${todaysEntries.length === 0
+      ? `<div class="empty-state">Nothing logged yet today. First entry above 👆</div>`
+      : todaysEntries.map(e => renderEntryRow(e)).join("")}
+  </div>`;
+}
+
+function renderEntryRow(entry) {
+  const meta = TYPE_META[entry.type];
+  const details = [];
+  if (entry.side) details.push(entry.side.charAt(0).toUpperCase()+entry.side.slice(1));
+  if (entry.amountMl) details.push(`${entry.amountMl}ml`);
+  if (entry.durationMin) details.push(`${entry.durationMin}min`);
+  const confirming = state.confirmingDelete === entry.id;
+
+  return `
+  <div class="entry-row fade-in">
+    <div class="entry-icon" style="background:${meta.soft};">${meta.emoji}</div>
+    <div class="entry-main">
+      <div class="entry-top">
+        <span class="entry-name">${meta.label}</span>
+        <span class="entry-time">${formatTime(entry.datetime)}</span>
+      </div>
+      ${details.length ? `<div class="entry-details">${details.join(" · ")}</div>` : ""}
+      ${entry.notes ? `<div class="entry-notes">${esc(entry.notes)}</div>` : ""}
+    </div>
+    ${confirming ? `
+      <div class="del-confirm">
+        <button class="del-yes tap" data-action="confirm-delete" data-id="${entry.id}">${ICONS.check}</button>
+        <button class="del-no tap" data-action="cancel-delete">${ICONS.x}</button>
+      </div>` : `
+      <button class="del-btn tap" data-action="ask-delete" data-id="${entry.id}">${ICONS.trash}</button>`}
+  </div>`;
+}
+
+function renderDevelopmentBlock() {
+  const weekly = getActiveWeeklyDev();
+  return `
+  <div class="dev-block-card fade-in">
+    <div class="dev-row">
+      <div class="dev-row-icon">🌼</div>
+      <div>
+        <div class="dev-header">${getBabyName()} this week</div>
+        <div class="dev-body-text">${esc(getPersonalizedText(weekly?.text || `${getBabyNamePossessive()} birth date`))}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* =========================================================================
+   CALENDAR TAB
+========================================================================= */
+function renderCalendarTab() {
+  const entriesByDate = {};
+  state.entries.forEach(e => {
+    const k = isoToLocalDateKey(e.datetime);
+    (entriesByDate[k] = entriesByDate[k] || []).push(e);
+  });
+  Object.values(entriesByDate).forEach(list => list.sort((a,b) => new Date(a.datetime)-new Date(b.datetime)));
+
+  const mc = state.monthCursor;
+  const firstOfMonth = new Date(mc.getFullYear(), mc.getMonth(), 1);
+  const startWeekday = firstOfMonth.getDay();
+  const daysInMonth = new Date(mc.getFullYear(), mc.getMonth()+1, 0).getDate();
+  const cells = [];
+  for (let i=0;i<startWeekday;i++) cells.push(null);
+  for (let d=1; d<=daysInMonth; d++) cells.push(d);
+
+  const todayK = dateKey(new Date());
+  const dayEntries = entriesByDate[state.selectedDate] || [];
+  const selectedMilestone = getMilestoneForDate(state.selectedDate);
+  const upcomingMilestone = getUpcomingMilestone();
+
+  return `
+  <div class="pad">
+    <div class="card">
+      <div class="month-header">
+        <button class="nav-arrow tap" data-action="shift-month" data-delta="-1">${ICONS.chevronLeft}</button>
+        <div class="heading" style="font-weight:800; font-size:15px;">${mc.toLocaleDateString(undefined,{month:"long", year:"numeric"})}</div>
+        <button class="nav-arrow tap" data-action="shift-month" data-delta="1">${ICONS.chevronRight}</button>
+      </div>
+      <div class="weekday-grid" style="margin-bottom:4px;">
+        ${["S","M","T","W","T","F","S"].map(d => `<div class="weekday">${d}</div>`).join("")}
+      </div>
+      <div class="day-grid">
+        ${cells.map(d => {
+          if (d === null) return `<div></div>`;
+          const k = dateKey(new Date(mc.getFullYear(), mc.getMonth(), d));
+          const has = !!entriesByDate[k];
+          const isSelected = k === state.selectedDate;
+          const isToday = k === todayK;
+          const isBirthday = state.babyBirthIso && k === dateKey(new Date(state.babyBirthIso));
+          const milestone = getMilestoneForDate(k);
+          return `<button class="day-cell tap ${isToday ? "today":""} ${isSelected ? "selected":""} ${isBirthday ? "birthday":""} ${milestone ? "milestone":""}" data-action="select-date" data-date="${k}">
+            ${milestone ? milestone.icon : d}${has ? `<span class="day-dot"></span>` : ""}
+          </button>`;
+        }).join("")}
+      </div>
+    </div>
+    ${selectedMilestone ? `<div class="milestone-banner"><strong>${selectedMilestone.icon} ${selectedMilestone.title}</strong> — ${esc(selectedMilestone.text)}</div>` : ""}
+    ${upcomingMilestone ? `<div class="milestone-banner">Next milestone: ${upcomingMilestone.title} on ${upcomingMilestone.date.toLocaleDateString(undefined,{month:"short", day:"numeric"})}</div>` : ""}
+    ${state.babyBirthIso && dateKey(new Date(state.babyBirthIso)) === state.selectedDate ? `<div style="text-align:center; font-size:12px; font-weight:700; color:var(--breast); margin-top:6px;">🎂 ${getBabyNamePossessive()} birth day</div>` : ""}
+
+    <div class="day-nav">
+      <button class="nav-arrow tap" data-action="shift-day" data-delta="-1">${ICONS.chevronLeft}</button>
+      <div class="day-title heading">${formatDateHeader(state.selectedDate)}</div>
+      <button class="nav-arrow tap" data-action="shift-day" data-delta="1">${ICONS.chevronRight}</button>
+    </div>
+
+    ${dayEntries.length === 0
+      ? `<div class="empty-state">No entries for this day.</div>`
+      : `${renderDayTimeline(dayEntries)}
+         <div style="margin-top:14px;">${[...dayEntries].reverse().map(e => renderEntryRow(e)).join("")}</div>`}
+  </div>`;
+}
+
+function renderDayTimeline(dayEntries) {
+  const HOUR_H = 26;
+  const totalH = HOUR_H * 24;
+  let hourLines = "";
+  for (let h=0; h<=24; h++) {
+    const label = h===0 ? "12a" : h===12 ? "12p" : h<12 ? `${h}a` : `${h-12}p`;
+    hourLines += `<div class="hour-line" style="top:${h*HOUR_H}px;"><span class="hour-label">${label}</span></div>`;
+  }
+  let entryDots = "";
+  dayEntries.forEach(e => {
+    const d = new Date(e.datetime);
+    const y = (d.getHours() + d.getMinutes()/60) * HOUR_H;
+    const meta = TYPE_META[e.type];
+    entryDots += `
+      <div class="tl-entry" style="top:${y-9}px; left:-6px;">
+        <div class="tl-dot" style="background:${meta.color}; box-shadow:0 0 0 1.5px ${meta.color};"></div>
+        <span class="tl-label">${meta.emoji} ${formatTime(e.datetime)}</span>
+      </div>`;
+  });
+  return `
+  <div class="timeline-card">
+    <div class="timeline-title heading">The rhythm of the day</div>
+    <div class="timeline-body" style="height:${totalH}px;">
+      ${hourLines}
+      <div class="spine"></div>
+      ${entryDots}
+    </div>
+  </div>`;
+}
+
+/* =========================================================================
+   SUMMARY TAB
+========================================================================= */
+function renderSummaryTab() {
+  const todayK = dateKey(new Date());
+  const todaysEntries = state.entries.filter(e => isoToLocalDateKey(e.datetime) === todayK);
+  const todaysFeeds = todaysEntries.filter(e => FEED_TYPES.includes(e.type));
+  const todaysPumps = todaysEntries.filter(e => e.type === "pumping");
+  const todaysPumpedMl = todaysPumps.reduce((s,e) => s + (e.amountMl||0), 0);
+  const todaysWet = todaysEntries.filter(e => e.type === "wetNappy").length;
+  const todaysDirty = todaysEntries.filter(e => e.type === "dirtyNappy").length;
+
+  const feedsSorted = [...todaysFeeds].sort((a,b) => new Date(a.datetime)-new Date(b.datetime));
+  let avgGap = null, maxGap = null;
+  if (feedsSorted.length > 1) {
+    const gaps = [];
+    for (let i=1;i<feedsSorted.length;i++) gaps.push(minutesBetween(feedsSorted[i-1].datetime, feedsSorted[i].datetime));
+    avgGap = Math.round(gaps.reduce((a,b)=>a+b,0) / gaps.length);
+    maxGap = Math.max(...gaps);
+  }
+
+  // last 7 days, broken out by category
+  const days = [];
+  for (let i=6;i>=0;i--) {
+    const d = new Date(); d.setDate(d.getDate()-i);
+    const k = dateKey(d);
+    const dayEntries = state.entries.filter(e => isoToLocalDateKey(e.datetime)===k);
+    days.push({
+      key:k, label: shortDate(k),
+      breast: dayEntries.filter(e=>e.type==="breast").length,
+      formula: dayEntries.filter(e=>e.type==="formula").length,
+      both: dayEntries.filter(e=>e.type==="both").length,
+      wet: dayEntries.filter(e=>e.type==="wetNappy").length,
+      dirty: dayEntries.filter(e=>e.type==="dirtyNappy").length,
+      pumpedMl: dayEntries.filter(e=>e.type==="pumping").reduce((s,e)=>s+(e.amountMl||0),0),
+    });
+  }
+  const maxPumped = Math.max(0, ...days.map(d => d.pumpedMl));
+
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-6); cutoff.setHours(0,0,0,0);
+  const last7Entries = state.entries.filter(e => new Date(e.datetime) >= cutoff);
+  const feedCounts = { breast:0, formula:0, both:0 };
+  last7Entries.forEach(e => { if (feedCounts[e.type] !== undefined) feedCounts[e.type]++; });
+  const totalFeedCount = feedCounts.breast + feedCounts.formula + feedCounts.both;
+
+  // intake vs typical range for her age, since birth (capped to last 14 days)
+  let intakeSection = "";
+  if (state.babyBirthIso) {
+    const daysSinceBirth = Math.max(0, Math.floor(ageInDays(state.babyBirthIso, new Date())));
+    const spanDays = Math.min(14, daysSinceBirth + 1);
+    const intakeDays = [];
+    for (let i = spanDays - 1; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const k = dateKey(d);
+      const dayEntries = state.entries.filter(e => isoToLocalDateKey(e.datetime) === k);
+      const actualMl = dayEntries.filter(e => e.type === "formula" || e.type === "both").reduce((s,e) => s + (e.amountMl || 0), 0);
+      const ageAtDay = Math.max(0, Math.floor(ageInDays(state.babyBirthIso, d)));
+      intakeDays.push({ key: k, label: shortDate(k), actualMl, expectedMl: referenceIntakeForDay(ageAtDay) });
+    }
+    intakeSection = `
+    <div class="chart-card" style="margin-bottom:0;">
+      <div class="chart-title heading">📈 Measured intake vs typical range</div>
+      <div class="sync-steps" style="margin-bottom:10px; font-size:12px;">
+        Solid bars are formula/mixed-bottle ml logged that day; pale bars are the typical daily total for her age, based on general NHS/AAP-style newborn feeding guidance. <b>Direct breastfeeding at the breast isn't counted</b> — it can't be measured, so a low or missing bar doesn't mean she's underfed if she's mostly nursing. Weight gain and wet nappy count (above) are more reliable signs than raw ml — and your midwife or health visitor is the best judge if you're ever concerned.
+      </div>
+      ${renderComparisonBars(intakeDays)}
+    </div>`;
+  }
+
+  return `
+  <div class="pad">
+    <div class="card-title heading" style="font-size:17px; margin-bottom:12px;">📊 Summary</div>
+
+    <div class="stat-grid">
+      ${renderStatCard("🍼","Feeds today", todaysFeeds.length, "var(--breast)")}
+      ${renderStatCard("⏱️","Avg gap between feeds", avgGap===null ? "—" : formatDuration(avgGap), "var(--mint)")}
+      ${renderStatCard("⏳","Longest gap today", maxGap===null ? "—" : formatDuration(maxGap), "var(--both)")}
+      ${renderStatCard("🥛","Pumped today", todaysPumpedMl+"ml", "var(--pumping)")}
+      ${renderStatCard("💧","Wet nappies today", todaysWet, "var(--wet)")}
+      ${renderStatCard("💩","Dirty nappies today", todaysDirty, "var(--dirty)")}
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title heading">Feeds — last 7 days</div>
+      ${renderStackedBars(days, [
+        {key:"breast", color: TYPE_META.breast.color},
+        {key:"formula", color: TYPE_META.formula.color},
+        {key:"both", color: TYPE_META.both.color},
+      ])}
+    </div>
+
+    ${totalFeedCount > 0 ? `
+    <div class="chart-card">
+      <div class="chart-title heading">Feed mix — last 7 days</div>
+      <div class="donut-wrap">
+        ${renderDonut(feedCounts, totalFeedCount, ["breast","formula","both"])}
+        <div class="legend">
+          ${["breast","formula","both"].filter(k => feedCounts[k] > 0).map(k => `
+            <div class="legend-item">
+              <span class="legend-swatch" style="background:${TYPE_META[k].color};"></span>
+              ${TYPE_META[k].label} — ${feedCounts[k]} (${Math.round(feedCounts[k]/totalFeedCount*100)}%)
+            </div>`).join("")}
+        </div>
+      </div>
+    </div>` : ""}
+
+    <div class="chart-card">
+      <div class="chart-title heading">Nappies — last 7 days</div>
+      ${renderStackedBars(days, [
+        {key:"wet", color: TYPE_META.wetNappy.color},
+        {key:"dirty", color: TYPE_META.dirtyNappy.color},
+      ])}
+      <div class="legend" style="flex-direction:row; gap:14px; margin-top:8px;">
+        <div class="legend-item"><span class="legend-swatch" style="background:${TYPE_META.wetNappy.color};"></span>Wet, 7-day total: ${days.reduce((s,d)=>s+d.wet,0)}</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:${TYPE_META.dirtyNappy.color};"></span>Dirty, 7-day total: ${days.reduce((s,d)=>s+d.dirty,0)}</div>
+      </div>
+    </div>
+
+    ${maxPumped > 0 ? `
+    <div class="chart-card">
+      <div class="chart-title heading">Pumped (ml) — last 7 days</div>
+      ${renderSimpleBars(days, "pumpedMl", TYPE_META.pumping.color, maxPumped, "ml")}
+    </div>` : ""}
+
+    ${intakeSection || (state.entries.length > 0 ? `<div class="empty-state">Add ${getBabyNamePossessive()} birth date in ⚙️ Settings to see ${getPersonalizedText("{pronounPossessive} intake trend vs a typical range for {pronounPossessive} age.")}</div>` : "")}
+
+    ${renderWeightSection()}
+
+    ${renderSummaryFactBlock()}
+
+    ${state.entries.length === 0 ? `<div class="empty-state">Log a few entries to see your summary here.</div>` : ""}
+  </div>`;
+}
+
+function renderSummaryFactBlock() {
+  const ageFact = getActiveAgeFact();
+  if (!ageFact) return "";
+  return `
+  <div class="dev-block-card fade-in" style="margin-top:16px;">
+    <div class="dev-row">
+      <div class="dev-row-icon">💡</div>
+      <div>
+        <div class="dev-header">Did you know?</div>
+        <div class="dev-body-text">${esc(getPersonalizedText(ageFact))}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderWeightSection() {
+  if (state.weights.length === 0) {
+    return `<div class="chart-card" style="margin-top:16px;">
+      <div class="chart-title heading">⚖️ Weight</div>
+      <div class="empty-state">No weigh-ins logged yet — add one in ⚙️ Settings after your next midwife or health visitor check.</div>
+    </div>`;
+  }
+  const sorted = [...state.weights].sort((a,b) => new Date(a.dateIso) - new Date(b.dateIso));
+  const latest = sorted[sorted.length - 1];
+  const rows = [...sorted].reverse().map((w, idx) => {
+    const prev = sorted[sorted.length - 1 - idx - 1];
+    const delta = prev ? Math.round((w.kg - prev.kg) * 1000) : null;
+    return `
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line);">
+      <div>
+        <b>${w.kg.toFixed(2)}kg</b> <span style="color:var(--ink-soft); font-size:12px;">(${kgToLbOz(w.kg)})</span>
+        <div style="font-size:11.5px; color:var(--ink-soft);">${new Date(w.dateIso).toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"})}${w.notes ? " · "+esc(w.notes) : ""}</div>
+      </div>
+      ${delta !== null ? `<div style="font-size:12.5px; font-weight:800; color:${delta>=0?"var(--mint)":"#E85D5D"};">${delta>=0?"+":""}${delta}g</div>` : ""}
+    </div>`;
+  }).join("");
+  return `
+  <div class="chart-card" style="margin-top:16px;">
+    <div class="chart-title heading">⚖️ Weight — latest ${latest.kg.toFixed(2)}kg (${kgToLbOz(latest.kg)})</div>
+    <div>${rows}</div>
+  </div>`;
+}
+
+function renderStatCard(emoji, label, value, color) {
+  return `
+  <div class="stat-card">
+    <div class="stat-label">${emoji} ${label}</div>
+    <div class="stat-value heading" style="color:${color};">${value}</div>
+  </div>`;
+}
+
+const BAR_MAX_PX = 108;
+
+function renderStackedBars(days, series) {
+  const maxTotal = Math.max(1, ...days.map(d => series.reduce((s, ser) => s + (d[ser.key]||0), 0)));
+  const bars = days.map(d => {
+    const total = series.reduce((s, ser) => s + (d[ser.key]||0), 0);
+    const hpx = total === 0 ? 0 : Math.max(4, (total / maxTotal) * BAR_MAX_PX);
+    const segs = series.map(ser => d[ser.key]
+      ? `<div class="bar-seg" style="height:${(d[ser.key]/Math.max(total,1))*100}%; background:${ser.color};"></div>`
+      : "").join("");
+    const lines = series.filter(ser => d[ser.key] > 0)
+      .map(ser => `<div class="bar-num-line" style="color:${ser.color};">${d[ser.key]}</div>`).join("");
+    return `<div class="bar-item">
+      <div class="bar-num-stack">${lines || `<div class="bar-num-line zero">0</div>`}</div>
+      <div class="bar-col" style="height:${hpx}px;">${segs}</div>
+    </div>`;
+  }).join("");
+  const labels = days.map(d => `<div class="bar-label">${d.label}</div>`).join("");
+  return `<div class="bar-chart">${bars}</div><div class="bar-labels">${labels}</div>`;
+}
+
+function renderSimpleBars(days, key, color, max, unit) {
+  const bars = days.map(d => {
+    const v = d[key] || 0;
+    const hpx = max === 0 ? 0 : Math.max(4, (v / max) * BAR_MAX_PX);
+    return `<div class="bar-item">
+      <div class="bar-num-stack">
+        <div class="bar-num-line ${v===0?"zero":""}" style="${v>0?`color:${color};`:""}">${v}${v>0 ? (unit||"") : ""}</div>
+      </div>
+      <div class="bar-col" style="height:${hpx}px;"><div class="bar-seg" style="height:100%; background:${color};"></div></div>
+    </div>`;
+  }).join("");
+  const labels = days.map(d => `<div class="bar-label">${d.label}</div>`).join("");
+  return `<div class="bar-chart">${bars}</div><div class="bar-labels">${labels}</div>`;
+}
+
+function renderComparisonBars(days) {
+  const REF_COLOR = "#B0A89D";
+  const maxVal = Math.max(1, ...days.map(d => Math.max(d.actualMl, d.expectedMl)));
+  const bars = days.map(d => {
+    const actualH = d.actualMl === 0 ? 0 : Math.max(4, (d.actualMl/maxVal)*BAR_MAX_PX);
+    const expectedH = Math.max(4, (d.expectedMl/maxVal)*BAR_MAX_PX);
+    return `<div class="bar-item">
+      <div class="bar-num-stack">
+        <div class="bar-num-line ${d.actualMl===0?"zero":""}" style="${d.actualMl>0?`color:${TYPE_META.formula.color};`:""}">${d.actualMl || 0}</div>
+        <div class="bar-num-line" style="color:${REF_COLOR};">~${d.expectedMl}</div>
+      </div>
+      <div class="bar-pair">
+        <div class="bar-col" style="width:50%; height:${actualH}px; background:${TYPE_META.formula.color};"></div>
+        <div class="bar-col" style="width:50%; height:${expectedH}px; background:${REF_COLOR};"></div>
+      </div>
+    </div>`;
+  }).join("");
+  const labels = days.map(d => `<div class="bar-label">${d.label}</div>`).join("");
+  return `<div class="bar-chart">${bars}</div><div class="bar-labels">${labels}</div>
+  <div class="legend" style="flex-direction:row; gap:14px; margin-top:8px;">
+    <div class="legend-item"><span class="legend-swatch" style="background:${TYPE_META.formula.color};"></span>Logged (ml)</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:${REF_COLOR};"></span>Typical for her age</div>
+  </div>`;
+}
+
+function renderDonut(counts, total, order) {
+  let acc = 0;
+  const stops = [];
+  order.forEach(k => {
+    if (!counts[k]) return;
+    const start = (acc/total)*360;
+    acc += counts[k];
+    const end = (acc/total)*360;
+    stops.push(`${TYPE_META[k].color} ${start}deg ${end}deg`);
+  });
+  const gradient = stops.length ? `conic-gradient(${stops.join(", ")})` : "var(--line)";
+  return `
+    <div class="donut" style="background:${gradient};">
+      <div class="donut-hole">
+        <span class="n heading">${total}</span>
+        <span class="l">feeds</span>
+      </div>
+    </div>`;
+}
+
+/* =========================================================================
+   EVENTS
+========================================================================= */
+function attachInputListeners() {
+  document.querySelectorAll("[data-field]").forEach(el => {
+    el.addEventListener("input", (e) => {
+      if (el.dataset.field === "syncConfigText") {
+        state.syncConfigText = e.target.value;
+      } else if (el.dataset.field === "birthInputText") {
+        state.birthInputText = e.target.value;
+      } else if (el.dataset.field === "babyNameInput") {
+        state.babyName = e.target.value;
+        saveBabyProfile();
+      } else if (el.dataset.field === "weightDateInput") {
+        state.weightDateInput = e.target.value;
+      } else if (el.dataset.field === "weightKgInput") {
+        state.weightKgInput = e.target.value;
+      } else if (el.dataset.field === "weightNoteInput") {
+        state.weightNoteInput = e.target.value;
+      } else {
+        state.form[el.dataset.field] = e.target.value;
+      }
+    });
+  });
+  const importInput = document.getElementById("importFile");
+  if (importInput) importInput.addEventListener("change", handleImportFile);
+  const importJsonInput = document.getElementById("importJsonFile");
+  if (importJsonInput) importJsonInput.addEventListener("change", handleImportJsonFile);
+}
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-action]");
+  if (!btn) return;
+  const action = btn.dataset.action;
+
+  switch (action) {
+    case "noop":
+      break;
+    case "set-tab":
+      state.tab = btn.dataset.tab;
+      state.confirmingDelete = null;
+      render();
+      break;
+    case "set-type":
+      state.form.type = btn.dataset.type;
+      render();
+      break;
+    case "set-side":
+      state.form.side = btn.dataset.side;
+      render();
+      break;
+    case "set-now":
+      state.form.datetime = localInputValue(new Date());
+      render();
+      break;
+    case "save":
+      addEntry();
+      break;
+    case "ask-delete":
+      state.confirmingDelete = btn.dataset.id;
+      render();
+      break;
+    case "cancel-delete":
+      state.confirmingDelete = null;
+      render();
+      break;
+    case "confirm-delete":
+      deleteEntry(btn.dataset.id);
+      break;
+    case "export":
+      exportCsv();
+      break;
+    case "import":
+      document.getElementById("importFile").click();
+      break;
+    case "export-json":
+      exportJson();
+      break;
+    case "restore-json":
+      document.getElementById("importJsonFile").click();
+      break;
+    case "open-sync":
+      state.showSyncPanel = true;
+      state.syncStatusMsg = "";
+      render();
+      break;
+    case "close-sync":
+    case "close-sync-backdrop":
+      state.showSyncPanel = false;
+      render();
+      break;
+    case "open-game":
+      state.showGamePanel = true;
+      render();
+      break;
+    case "close-game":
+    case "close-game-backdrop":
+      state.showGamePanel = false;
+      render();
+      break;
+    case "equip-theme":
+      equipTheme(btn.dataset.theme);
+      break;
+    case "buy-theme":
+      buyTheme(btn.dataset.theme);
+      break;
+    case "buy-powerup":
+      buyPowerup(btn.dataset.id);
+      break;
+    case "close-compliment":
+      state.activeCompliment = null;
+      render();
+      break;
+    case "save-birth": {
+      const val = state.birthInputText || (state.babyBirthIso ? localInputValue(new Date(state.babyBirthIso)) : "");
+      if (!val) { showToast("Pick a date and time first"); break; }
+      setBabyBirth(new Date(val).toISOString());
+      showToast("🎂 Birth date saved");
+      break;
+    }
+    case "set-pronoun": {
+      state.babyPronouns = btn.dataset.pronoun || "she";
+      saveBabyProfile();
+      render();
+      break;
+    }
+    case "add-weight":
+      addWeight();
+      break;
+    case "delete-weight":
+      deleteWeight(btn.dataset.id);
+      break;
+    case "connect-sync": {
+      const parsed = parseFirebaseConfigInput(state.syncConfigText);
+      if (!parsed) {
+        state.syncStatusMsg = "Couldn't read that config — make sure you pasted the whole block including apiKey and databaseURL.";
+        render();
+        break;
+      }
+      connectFirebase(parsed);
+      break;
+    }
+    case "disconnect-sync":
+      disconnectSync();
+      render();
+      break;
+    case "shift-month": {
+      const delta = Number(btn.dataset.delta);
+      state.monthCursor = new Date(state.monthCursor.getFullYear(), state.monthCursor.getMonth()+delta, 1);
+      render();
+      break;
+    }
+    case "shift-day": {
+      const delta = Number(btn.dataset.delta);
+      const [y,m,d] = state.selectedDate.split("-").map(Number);
+      const nd = new Date(y, m-1, d+delta);
+      state.selectedDate = dateKey(nd);
+      state.monthCursor = new Date(nd.getFullYear(), nd.getMonth(), 1);
+      render();
+      break;
+    }
+    case "select-date":
+      state.selectedDate = btn.dataset.date;
+      render();
+      break;
+  }
+}); // <--- THIS CLOSES THE CLICK LISTENER
+
+/* =========================================================================
+   INIT
+========================================================================= */
+loadState();
+applyTheme(state.game.activeTheme);
+applyPowerupEffects();
+const savedConfig = loadFirebaseConfig();
+if (savedConfig) {
+  state.syncConfigText = JSON.stringify(savedConfig, null, 2);
+  connectFirebase(savedConfig, { silent: true });
+}
+setInterval(() => { state.now = new Date(); applyPowerupEffects(); render(); }, 30000);
+render();
+
+// --- NEW HELPER FUNCTIONS ---
+function handleFactAdd() {
+  const input = document.getElementById("newFactInput");
+  if (input && input.value.trim()) {
+    addCloudFact(input.value.trim());
+    input.value = "";
+  }
+}
+
+function handleTipAdd() {
+  const input = document.getElementById("newTopTipInput");
+  if (input && input.value.trim()) {
+    addCloudTip(input.value.trim());
+    input.value = "";
+  }
+}
+</script>
+</body>
+</html>

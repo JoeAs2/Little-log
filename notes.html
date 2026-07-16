@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+<title>Shared Notebooks 📝</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #FFF8F0;
+    --card: #FFFFFF;
+    --ink: #3A2E2C;
+    --ink-soft: #8A7B72;
+    --line: #F1E4D6;
+    --breast: #FF8A73;
+    --breast-soft: #FFE7E0;
+    --mint: #3FBF9E;
+    --mint-soft: #DFF6EF;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0; background: var(--bg);
+    font-family: 'Nunito', system-ui, sans-serif; color: var(--ink);
+    display: flex; height: 100vh; overflow: hidden;
+  }
+  .heading { font-family: 'Baloo 2', 'Nunito', sans-serif; }
+
+  /* Floating Subtle Home Icon */
+  .home-btn {
+    position: fixed; bottom: 20px; right: 20px;
+    background: var(--card); border: 1px solid var(--line);
+    width: 50px; height: 50px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    z-index: 1000; transition: transform 0.2s ease;
+  }
+  .home-btn:active { transform: scale(0.9); }
+
+  /* Notebook Sidebar Layout */
+  .sidebar {
+    width: 200px; background: var(--card); border-right: 1px solid var(--line);
+    display: flex; flex-direction: column; height: 100%;
+  }
+  .sidebar-header {
+    padding: 16px 12px; border-bottom: 1px solid var(--line);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .sidebar-title { font-size: 16px; font-weight: 800; margin: 0; }
+  .add-btn {
+    background: var(--breast-soft); border: none; color: var(--breast);
+    font-size: 18px; font-weight: 800; width: 28px; height: 28px;
+    border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .notebook-list { flex: 1; overflow-y: auto; padding: 8px; list-style: none; margin: 0; }
+  .notebook-item {
+    padding: 10px; border-radius: 12px; cursor: pointer; font-weight: 700;
+    font-size: 13px; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .notebook-item.active { background: var(--breast-soft); color: var(--ink); }
+  .delete-notebook-btn {
+    background: transparent; border: none; font-size: 12px; color: var(--ink-soft); cursor: pointer; display: none;
+  }
+  .notebook-item:hover .delete-notebook-btn { display: inline-block; }
+
+  /* Editor Canvas Space */
+  .editor-canvas { flex: 1; display: flex; flex-direction: column; background: var(--bg); padding: 20px; }
+  .editor-header { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+  .notebook-title-input {
+    background: transparent; border: none; font-size: 24px; font-weight: 800;
+    color: var(--ink); width: 100%; outline: none;
+  }
+  .editor-body {
+    flex: 1; background: var(--card); border: 1.5px solid var(--line);
+    border-radius: 18px; padding: 16px; font-size: 14.5px; line-height: 1.6;
+    outline: none; overflow-y: auto;
+  }
+  .editor-body img { max-width: 100%; border-radius: 10px; margin: 8px 0; }
+  .editor-status { font-size: 11px; color: var(--ink-soft); margin-top: 6px; text-align: right; }
+</style>
+</head>
+<body>
+
+<!-- Sidebar for Notebook Folders -->
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h2 class="sidebar-title heading">📝 Folders</h2>
+    <button class="add-btn" onclick="createNewNotebook()">+</button>
+  </div>
+  <ul class="notebook-list" id="notebookList"></ul>
+</div>
+
+<!-- Active Document Editor Space -->
+<div class="editor-canvas">
+  <div class="editor-header">
+    <input type="text" id="notebookTitle" class="notebook-title-input heading" placeholder="Untitled Notes..." oninput="onTitleChanged()" />
+  </div>
+  
+  <div id="editor" class="editor-body" contenteditable="true" placeholder="Start typing or paste an image here..." oninput="onContentChanged()"></div>
+  
+  <div id="status" class="editor-status">Offline</div>
+</div>
+
+<!-- Minimalist Floating Go-Home Action -->
+<button class="home-btn" onclick="goHome()">🏡</button>
+
+<!-- Firebase compatibility imports[cite: 1] -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<script>
+  let dbRef = null;
+  let activeId = null;
+  let notebooks = {};
+  let saveTimeout = null;
+
+  // Let parent homepage inject credentials
+  window.addEventListener("message", function(event) {
+    if (event.data && event.data.type === "SYNC_FIREBASE_CONFIG") {
+      initializeFirebase(event.data.config);
+    }
+  });
+
+  function goHome() {
+    window.parent.postMessage({ type: "GO_HOME" }, "*");
+  }
+
+  function initializeFirebase(config) {
+    if (firebase.apps && firebase.apps.length) {
+      firebase.apps.forEach(a => a.delete());
+    }
+    firebase.initializeApp(config);
+    const db = firebase.database();
+    dbRef = db.ref("notebooks");
+    
+    document.getElementById("status").innerText = "Connected & Synced 🟢";
+
+    // Realtime changes sync instantly back and forth across devices
+    dbRef.on("value", snapshot => {
+      notebooks = snapshot.val() || {};
+      renderNotebookList();
+      if (activeId && notebooks[activeId]) {
+        updateEditorDisplay();
+      } else if (Object.keys(notebooks).length > 0) {
+        selectNotebook(Object.keys(notebooks)[0]);
+      }
+    });
+  }
+
+  function renderNotebookList() {
+    const list = document.getElementById("notebookList");
+    list.innerHTML = "";
+    Object.keys(notebooks).forEach(id => {
+      const item = document.createElement("li");
+      item.className = `notebook-item ${id === activeId ? 'active' : ''}`;
+      item.onclick = () => selectNotebook(id);
+      item.innerHTML = `
+        <span>📂 ${notebooks[id].title || 'Untitled'}</span>
+        <button class="delete-notebook-btn" onclick="event.stopPropagation(); deleteNotebook('${id}')">✕</button>
+      `;
+      list.appendChild(item);
+    });
+  }
+
+  function createNewNotebook() {
+    if (!dbRef) return;
+    const newId = Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+    dbRef.child(newId).set({
+      title: "New Notebook",
+      content: ""
+    });
+    activeId = newId;
+  }
+
+  function selectNotebook(id) {
+    activeId = id;
+    renderNotebookList();
+    updateEditorDisplay();
+  }
+
+  function updateEditorDisplay() {
+    const note = notebooks[activeId];
+    if (!note) return;
+    
+    // Prevent rewriting cursor focus if we are the one typing
+    if (document.activeElement !== document.getElementById("editor")) {
+      document.getElementById("editor").innerHTML = note.content || "";
+    }
+    if (document.activeElement !== document.getElementById("notebookTitle")) {
+      document.getElementById("notebookTitle").value = note.title || "";
+    }
+  }
+
+  function onTitleChanged() {
+    if (!activeId || !dbRef) return;
+    const val = document.getElementById("notebookTitle").value;
+    dbRef.child(activeId).child("title").set(val);
+  }
+
+  function onContentChanged() {
+    if (!activeId || !dbRef) return;
+    const val = document.getElementById("editor").innerHTML;
+    
+    // Debounce database calls slightly to handle rapid keystroke writing cleanly
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => {
+      dbRef.child(activeId).child("content").set(val);
+    }, 400);
+  }
+
+  function deleteNotebook(id) {
+    if (confirm("Delete this entire notebook?")) {
+      if (id === activeId) activeId = null;
+      dbRef.child(id).remove();
+    }
+  }
+
+  // Handle direct image pasting (Base64 inline encoding for easy sync representation)
+  document.getElementById("editor").addEventListener("paste", function(e) {
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    for (let index in items) {
+      const item = items[index];
+      if (item.kind === 'file' && item.type.startsWith('image/')) {
+        const blob = item.getAsFile();
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const img = document.createElement("img");
+          img.src = event.target.result;
+          document.getElementById("editor").appendChild(img);
+          onContentChanged();
+        };
+        reader.readAsDataURL(blob);
+      }
+    }
+  });
+</script>
+</body>
+</html>
