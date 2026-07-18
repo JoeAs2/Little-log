@@ -1,0 +1,21 @@
+{
+  "short_name": "K&J Home",
+  "name": "K & J's Smart Homepage",
+  "icons": [
+    {
+      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' width='192' height='192'><rect width='100' height='100' rx='24' fill='%23FFF8F0'/><text y='70' x='18' font-size='60'>🏡</text></svg>",
+      "type": "image/svg+xml",
+      "sizes": "192x192"
+    },
+    {
+      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' width='512' height='512'><rect width='100' height='100' rx='24' fill='%23FFF8F0'/><text y='70' x='18' font-size='60'>🏡</text></svg>",
+      "type": "image/svg+xml",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#FFF8F0",
+  "theme_color": "#FF8A73",
+  "display": "standalone",
+  "orientation": "portrait"
+}
