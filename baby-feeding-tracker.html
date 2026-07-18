@@ -1,6 +1,12 @@
   <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="manifest" href="manifest.json" />
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js');
+  }
+</script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
 <title>Little Log 🍼</title>
@@ -1539,7 +1545,7 @@ function disconnectSync() {
 }
 
 /* =========================================================================
-   DATA ACTIONS
+    DATA ACTIONS (With Smart ntfy Notifications Attached! 🍼)
 ========================================================================= */
 function addEntry() {
   const f = state.form;
@@ -1557,18 +1563,44 @@ function addEntry() {
   state.entries.sort((a,b) => new Date(b.datetime) - new Date(a.datetime));
   saveEntries();
   if (syncRef) syncRef.child(entry.id).set(entry).catch(e => console.error("Sync write failed", e));
+  
+  // --- START OF NTFY ENGINE INTEGRATION ---
+  // 1. Wipe out any older active/pending feeding reminders from both phone notification trays
+  if (typeof clearNotification === "function") {
+    clearNotification("emmy_feed_reminder");
+  }
+
+  // 2. Schedule a brand new one to fire 3 hours into the future
+  if (typeof sendNotification === "function") {
+    sendNotification({
+      title: "🍼 Little Log Alert",
+      text: `Emmy was just logged for a ${TYPE_META[f.type].label || 'feeding'}. A new check-in is due in 3 hours!`,
+      delay: "3h",
+      sequenceId: "emmy_feed_reminder"
+    });
+  }
+  // --- END OF NTFY ENGINE INTEGRATION ---
+
   showToast(`${TYPE_META[f.type].emoji} Logged!`);
   state.form = { type: "breast", datetime: localInputValue(new Date()), side: "both", amountMl: "", durationMin: "", notes: "" };
   render();
   checkNewAchievements();
 }
+
 function deleteEntry(id) {
   state.entries = state.entries.filter(e => e.id !== id);
   state.confirmingDelete = null;
   saveEntries();
   if (syncRef) syncRef.child(id).remove().catch(e => console.error("Sync delete failed", e));
+  
+  // If an entry is deleted, clear out the current automated reminder so it doesn't get out of sync
+  if (typeof clearNotification === "function") {
+    clearNotification("emmy_feed_reminder");
+  }
+
   render();
 }
+
 function addWeight() {
   const dateVal = state.weightDateInput || dateKey(new Date());
   const kgVal = parseFloat(state.weightKgInput);
@@ -1591,17 +1623,20 @@ function addWeight() {
   render();
   checkNewAchievements();
 }
+
 function deleteWeight(id) {
   state.weights = state.weights.filter(w => w.id !== id);
   saveWeights();
   if (weightsRef) weightsRef.child(id).remove().catch(e => console.error("Sync delete failed", e));
   render();
 }
+
 function showToast(msg) {
   state.toast = msg;
   render();
   setTimeout(() => { state.toast = null; render(); }, 2000);
 }
+
 function exportCsv() {
   const header = ["Date","Time","Type","Amount (ml)","Duration (min)","Side","Notes"];
   const rows = [...state.entries]
@@ -1737,7 +1772,6 @@ function restoreJsonBackup(data) {
   }
   render();
 }
-
 /* =========================================================================
    RENDER: ROOT
 ========================================================================= */
@@ -2833,6 +2867,6 @@ function handleTipAdd() {
   });
 })();
 </script>
-
+<script src="ntfy-engine.js"></script>
 </body>
 </html>
