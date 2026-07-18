@@ -96,6 +96,10 @@
   .icon-btn {
     background: transparent; border: none; color: var(--ink-soft); padding: 4px; font-size: 14px; cursor: pointer;
   }
+  .export-all-btn {
+    width: 100%; margin-top: 14px; padding: 11px 0; border-radius: 12px; border: 1.5px solid var(--line);
+    background: var(--bg); color: var(--ink); font-weight: 800; font-size: 13px;
+  }
   .empty-state {
     text-align: center; color: var(--ink-soft); font-size: 13px; padding: 20px 12px;
     background: var(--bg); border-radius: 14px; border: 1.5px dashed var(--line); margin-top: 10px;
@@ -167,6 +171,7 @@
       <div class="weekday">Th</div><div class="weekday">Fr</div><div class="weekday">Sa</div><div class="weekday">Su</div>
     </div>
     <div class="day-grid" id="dayGrid" style="margin-top:4px;"></div>
+    <button class="export-all-btn tap" onclick="downloadAllICS()">⬇ Export all events (.ics)</button>
   </div>
 
   <div class="card">
@@ -358,6 +363,8 @@
           ${e.notes ? `<div class="event-meta">${esc(e.notes)}</div>` : ""}
         </div>
         <div class="event-actions">
+          <a class="icon-btn tap" href="${googleCalUrl(e)}" target="_blank" rel="noopener" title="Add to Google Calendar" onclick="event.stopPropagation()">🗓️</a>
+          <button class="icon-btn tap" title="Download .ics" onclick="event.stopPropagation(); downloadSingleICS('${id}')">⬇</button>
           <button class="icon-btn tap" onclick="openEventModal('${id}')">✎</button>
         </div>
       </div>`;
@@ -365,6 +372,80 @@
 
   function esc(s) {
     return String(s).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+  }
+
+  // --- Google Calendar / .ics export ---
+  function pad2(n) { return String(n).padStart(2, "0"); }
+
+  function eventTimeBounds(e) {
+    if (e.time) {
+      const start = new Date(`${e.date}T${e.time}:00`);
+      const end = new Date(start.getTime() + 30 * 60000);
+      const stamp = d => d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + "T" + pad2(d.getHours()) + pad2(d.getMinutes()) + "00";
+      return { start: stamp(start), end: stamp(end), allDay: false };
+    }
+    const start = e.date.replace(/-/g, "");
+    const endD = new Date(e.date + "T00:00:00");
+    endD.setDate(endD.getDate() + 1);
+    const end = endD.getFullYear() + pad2(endD.getMonth() + 1) + pad2(endD.getDate());
+    return { start, end, allDay: true };
+  }
+
+  function googleCalUrl(e) {
+    const { start, end, allDay } = eventTimeBounds(e);
+    const params = new URLSearchParams({
+      action: "TEMPLATE",
+      text: e.title || "Event",
+      dates: `${start}/${end}`,
+      details: e.notes || "",
+      location: e.location || "",
+    });
+    return `https://calendar.google.com/calendar/render?${params.toString()}`;
+  }
+
+  function icsEscape(s) {
+    return String(s || "").replace(/\\/g, "\\\\").replace(/,/g, "\\,").replace(/;/g, "\\;").replace(/\n/g, "\\n");
+  }
+
+  function eventToICS(id, e) {
+    const { start, end, allDay } = eventTimeBounds(e);
+    const stampNow = new Date().toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+    return [
+      "BEGIN:VEVENT",
+      `UID:${id}@kj-homepage`,
+      `DTSTAMP:${stampNow}`,
+      allDay ? `DTSTART;VALUE=DATE:${start}` : `DTSTART:${start}`,
+      allDay ? `DTEND;VALUE=DATE:${end}` : `DTEND:${end}`,
+      `SUMMARY:${icsEscape(e.title || "Event")}`,
+      e.location ? `LOCATION:${icsEscape(e.location)}` : "",
+      e.notes ? `DESCRIPTION:${icsEscape(e.notes)}` : "",
+      "END:VEVENT",
+    ].filter(Boolean).join("\r\n");
+  }
+
+  function downloadICS(filename, body) {
+    const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//K&J Homepage//Shared Calendar//EN", body, "END:VCALENDAR"].join("\r\n");
+    const blob = new Blob([ics], { type: "text/calendar;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function downloadSingleICS(id) {
+    const e = events[id];
+    if (!e) return;
+    downloadICS(`${(e.title || "event").replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.ics`, eventToICS(id, e));
+  }
+
+  function downloadAllICS() {
+    const body = Object.entries(events).map(([id, e]) => eventToICS(id, e)).join("\r\n");
+    if (!body) { alert("No events to export yet."); return; }
+    downloadICS("shared-calendar.ics", body);
   }
 
   function openEventModal(id) {
