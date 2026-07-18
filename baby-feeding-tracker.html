@@ -12,10 +12,12 @@
   background: var(--card); border: 1.5px solid var(--line);
   width: 48px; height: 48px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 22px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  z-index: 99; transition: transform 0.2s ease;
+  font-size: 22px; cursor: grab; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  z-index: 99; transition: transform 0.15s ease, box-shadow 0.15s ease;
+  touch-action: none; user-select: none;
 }
-.home-floating-btn:active { transform: scale(0.9); }
+.home-floating-btn:active { transform: scale(0.92); box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+.home-floating-btn.dragging { cursor: grabbing; transition: none; }
 
 /* Force Title to stay on one line on small mobile layouts */
 .title-wrapper { white-space: nowrap; flex-shrink: 0; }
@@ -88,7 +90,7 @@
     box-shadow: 0 1px 3px rgba(0,0,0,0.06);
   }
   .export-btn.overdue {
-    background: #FFF0EC;
+    background: var(--breast-soft);
     border: 1.5px solid var(--breast);
   }
   .export-dot {
@@ -125,7 +127,7 @@
   .type-btn {
     display: flex; align-items: center; justify-content: center; gap: 6px;
     padding: 12px 8px; border-radius: 14px; border: 2px solid var(--line);
-    background: #fff; font-weight: 700; font-size: 14px; color: var(--ink);
+    background: var(--card); font-weight: 700; font-size: 14px; color: var(--ink);
   }
   .type-btn .emoji { font-size: 18px; }
   .type-btn.active-breast { border-color: var(--breast); background: var(--breast-soft); }
@@ -139,7 +141,7 @@
   .field-block { margin-bottom: 12px; }
   input[type="datetime-local"], input[type="number"], textarea {
     width: 100%; padding: 10px; border-radius: 12px; border: 1.5px solid var(--line);
-    font-size: 14px; background: #fff; color: var(--ink);
+    font-size: 14px; background: var(--card); color: var(--ink);
   }
   textarea { resize: none; }
   .now-btn {
@@ -149,7 +151,7 @@
   .side-grid { display: flex; gap: 8px; }
   .side-btn {
     flex: 1; padding: 8px 0; border-radius: 10px; border: 1.5px solid var(--line);
-    background: #fff; font-weight: 700; font-size: 13px; text-transform: capitalize;
+    background: var(--card); color: var(--ink); font-weight: 700; font-size: 13px; text-transform: capitalize;
   }
   .side-btn.active { border: 2px solid var(--breast); background: var(--breast-soft); }
   .save-btn {
@@ -208,7 +210,7 @@
 
   .month-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
   .nav-arrow {
-    width: 34px; height: 34px; border-radius: 10px; border: 1.5px solid var(--line); background: #fff;
+    width: 34px; height: 34px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--card);
     display: flex; align-items: center; justify-content: center; color: var(--ink);
   }
   .weekday-grid, .day-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; }
@@ -293,8 +295,8 @@
   .dev-header { font-weight: 800; font-size: 13.5px; color: var(--ink); margin-bottom: 2px; }
   .dev-body-text { font-size: 13px; line-height: 1.45; color: var(--ink); }
   .header-fact-banner {
-    margin-top: 12px; padding: 10px 12px; border-radius: 14px; background: rgba(255,255,255,0.72);
-    border: 1px solid rgba(255,255,255,0.85); box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+    margin-top: 12px; padding: 10px 12px; border-radius: 14px; background: var(--banner-bg, rgba(255,255,255,0.72));
+    border: 1px solid var(--banner-border, rgba(255,255,255,0.85)); box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);
     color: var(--ink); font-size: 12.5px; line-height: 1.45; display: flex; align-items: flex-start; gap: 8px;
     animation: factFloat 6s ease-in-out infinite;
   }
@@ -335,7 +337,7 @@
     display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700;
     padding: 6px 10px; border-radius: 999px; margin-bottom: 12px;
   }
-  .sync-status-pill.on { background: var(--mint-soft); color: #1F8A6F; }
+  .sync-status-pill.on { background: var(--mint-soft); color: var(--mint-text, #1F8A6F); }
   .sync-status-pill.off { background: var(--line); color: var(--ink-soft); }
   .sync-steps { font-size: 13px; line-height: 1.55; color: var(--ink); margin-bottom: 14px; }
   .sync-steps ol { margin: 6px 0 0; padding-left: 20px; }
@@ -351,7 +353,7 @@
     font-weight: 800; font-size: 14px;
   }
   .sync-disconnect-btn {
-    padding: 12px 16px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; color: var(--ink);
+    padding: 12px 16px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--card); color: var(--ink);
     font-weight: 700; font-size: 13px;
   }
   .settings-section-title { font-weight: 800; font-size: 14.5px; margin-bottom: 4px; }
@@ -379,7 +381,7 @@
   .level-card .lvl-name { font-weight: 800; font-size: 15px; color: var(--both); margin-bottom: 2px; }
   .level-card .lvl-xp-text { font-size: 11.5px; color: var(--ink-soft); font-weight: 700; }
   .token-pill {
-    display: inline-flex; align-items: center; gap: 5px; background: var(--formula-soft); color: #8A5A00;
+    display: inline-flex; align-items: center; gap: 5px; background: var(--formula-soft); color: var(--formula-text, #8A5A00);
     border-radius: 999px; padding: 6px 12px; font-weight: 800; font-size: 13px; margin-bottom: 12px;
   }
   .achv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px; }
@@ -424,10 +426,27 @@
   /* --- Nursery Shop themes --- */
   body[data-theme="goth"] {
     --bg: #14111A; --card: #1F1B29; --ink: #EDE7F6; --ink-soft: #9A8FB3; --line: #322B45;
+    --breast: #FF9EB1; --breast-soft: #3A2430;
+    --pumping: #9AACFF; --pumping-soft: #232A45;
+    --formula: #FFCB6B; --formula-soft: #3A3018;
+    --both: #D19EF0; --both-soft: #2E2340;
+    --mint: #5FE0BE; --mint-soft: #163A30;
+    --wet: #8FD3F0; --wet-soft: #16303F;
+    --dirty: #D2B48C; --dirty-soft: #332815;
+    --banner-bg: rgba(255,255,255,0.06); --banner-border: rgba(255,255,255,0.14);
+    --mint-text: #7FEBCB; --formula-text: #FFCB6B;
   }
   body[data-theme="vintage"] {
     --bg: #1A1035; --card: #2B1854; --ink: #FDF6FF; --ink-soft: #D9B8FF; --line: #4A2E82;
-    --breast: #FF2E9A; --pumping: #2EE6FF; --formula: #FFE838; --mint: #2EFFB0;
+    --breast: #FF2E9A; --breast-soft: #4A1240;
+    --pumping: #2EE6FF; --pumping-soft: #123A4A;
+    --formula: #FFE838; --formula-soft: #453A10;
+    --both: #C084FF; --both-soft: #341A54;
+    --mint: #2EFFB0; --mint-soft: #0F3D2E;
+    --wet: #2EE6FF; --wet-soft: #123A4A;
+    --dirty: #FFB86C; --dirty-soft: #40280F;
+    --banner-bg: rgba(255,255,255,0.08); --banner-border: rgba(255,255,255,0.2);
+    --mint-text: #6BFFCF; --formula-text: #FFE838;
   }
   body[data-theme="sleepy"] .title, body[data-theme="sleepy"] .heading {
     filter: blur(0.4px); letter-spacing: 0.4px;
@@ -456,7 +475,7 @@ const TOP_TIPS_KEY = "babyFeedTopTips";
 const BABY_NAME_KEY = "babyName";
 const BABY_PRONOUNS_KEY = "babyPronouns";
 const EXPORT_REMINDER_MS = 24 * 60 * 60 * 1000;
-const APP_VERSION = "2.5";
+const APP_VERSION = "2.6";
 
 const TYPE_META = {
   breast:  { label: "Breastmilk", emoji: "🤱", color: "#FF8A73", soft: "#FFE7E0" },
@@ -2735,7 +2754,85 @@ function handleTipAdd() {
 </script>
 
 <!-- Floating Subtle Return Home Button -->
-<button class="home-floating-btn" onclick="window.parent.postMessage({ type: 'GO_HOME' }, '*')">🏡</button>
+<button id="homeBubble" class="home-floating-btn">🏡</button>
+
+<script>
+(function () {
+  const btn = document.getElementById("homeBubble");
+  if (!btn) return;
+  const STORAGE_KEY = "homeBubblePos";
+  const DRAG_THRESHOLD = 6;
+  let pointerId = null, startX = 0, startY = 0, offsetX = 0, offsetY = 0, moved = false;
+
+  function clamp(x, y) {
+    const margin = 6;
+    const maxX = window.innerWidth - btn.offsetWidth - margin;
+    const maxY = window.innerHeight - btn.offsetHeight - margin;
+    return { x: Math.min(Math.max(x, margin), maxX), y: Math.min(Math.max(y, margin), maxY) };
+  }
+  function applyPos(x, y) {
+    btn.style.left = x + "px";
+    btn.style.top = y + "px";
+    btn.style.right = "auto";
+    btn.style.bottom = "auto";
+  }
+  function restorePos() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+      if (saved && typeof saved.x === "number") {
+        const p = clamp(saved.x, saved.y);
+        applyPos(p.x, p.y);
+      }
+    } catch (e) {}
+  }
+  restorePos();
+
+  btn.addEventListener("pointerdown", function (e) {
+    pointerId = e.pointerId;
+    moved = false;
+    const rect = btn.getBoundingClientRect();
+    offsetX = e.clientX - rect.left;
+    offsetY = e.clientY - rect.top;
+    startX = e.clientX;
+    startY = e.clientY;
+    btn.setPointerCapture(pointerId);
+  });
+
+  btn.addEventListener("pointermove", function (e) {
+    if (pointerId === null) return;
+    const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
+    if (dist > DRAG_THRESHOLD) {
+      if (!moved) btn.classList.add("dragging");
+      moved = true;
+      const p = clamp(e.clientX - offsetX, e.clientY - offsetY);
+      applyPos(p.x, p.y);
+    }
+  });
+
+  function endDrag(e) {
+    if (pointerId === null) return;
+    btn.releasePointerCapture(pointerId);
+    pointerId = null;
+    btn.classList.remove("dragging");
+    if (moved) {
+      const rect = btn.getBoundingClientRect();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ x: rect.left, y: rect.top }));
+    } else {
+      window.parent.postMessage({ type: "GO_HOME" }, "*");
+    }
+  }
+  btn.addEventListener("pointerup", endDrag);
+  btn.addEventListener("pointercancel", endDrag);
+
+  window.addEventListener("resize", function () {
+    if (btn.style.left) {
+      const rect = btn.getBoundingClientRect();
+      const p = clamp(rect.left, rect.top);
+      applyPos(p.x, p.y);
+    }
+  });
+})();
+</script>
 
 </body>
 </html>

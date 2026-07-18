@@ -82,6 +82,7 @@
   .card-title { font-size: 16px; font-weight: 800; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
 
   .quick-list { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+  #eventsPreview, #tasksPreview { cursor: pointer; }
   .list-item {
     display: flex; align-items: center; justify-content: space-between;
     padding: 10px 12px; background: var(--bg); border-radius: 12px;
@@ -99,6 +100,19 @@
     font-size: 12px; border: 1.5px solid var(--line);
   }
   .wish-link { color: var(--pumping); text-decoration: none; font-weight: 700; display: inline-block; margin-top: 6px; }
+
+  .research-item {
+    background: var(--bg); border-radius: 14px; padding: 12px; margin-top: 10px; cursor: pointer;
+  }
+  .research-item:first-child { margin-top: 0; }
+  .research-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .research-title { font-weight: 800; font-size: 13.5px; }
+  .research-updated { font-size: 11px; color: var(--ink-soft); font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+  .research-preview { font-size: 12.5px; color: var(--ink-soft); margin-top: 4px; line-height: 1.4; }
+  .research-link-chip {
+    display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; font-size: 11.5px; font-weight: 700;
+    color: var(--pumping); background: var(--pumping-soft); padding: 4px 9px; border-radius: 999px; text-decoration: none;
+  }
 
   .app-modal {
     position: fixed; inset: 0; background: var(--bg); z-index: 100;
@@ -144,11 +158,11 @@
       <span class="launcher-icon">📝</span>
       <span class="launcher-label heading">Notebooks</span>
     </div>
-    <div class="app-launcher" onclick="alert('Coming soon: Shared Calendar')">
+    <div class="app-launcher" onclick="launchApp('./calendar.html', 'Shared Calendar')">
       <span class="launcher-icon">📅</span>
       <span class="launcher-label heading">Calendar</span>
     </div>
-    <div class="app-launcher" onclick="alert('Coming soon: Tasks & Projects')">
+    <div class="app-launcher" onclick="launchApp('./tasks.html', 'Active Tasks')">
       <span class="launcher-icon">📋</span>
       <span class="launcher-label heading">Active Tasks</span>
     </div>
@@ -156,38 +170,22 @@
 
   <div class="card">
     <div class="card-title heading">📅 Upcoming Events</div>
-    <ul class="quick-list">
-      <li class="list-item">
-        <div>
-          <b>6-Week Baby Check 👶</b>
-          <div class="item-meta">Norwich Medical Centre</div>
-        </div>
-        <span style="font-size:12px; font-weight: 800; color:var(--breast);">Aug 14, 10:30a</span>
-      </li>
+    <ul class="quick-list" id="eventsPreview">
+      <li class="list-item"><span class="item-meta">Loading…</span></li>
     </ul>
   </div>
 
   <div class="card">
-    <div class="card-title heading">📋 High Priority Tasks</div>
-    <ul class="quick-list">
-      <li class="list-item">
-        <div>
-          <b>Assemble Bedroom Flatpack Drawers</b>
-          <div class="item-meta">Due: Aug 18 · Est: 1.5h</div>
-        </div>
-        <span class="todo-badge status-progress">In Progress</span>
-      </li>
+    <div class="card-title heading">📋 Active Tasks</div>
+    <ul class="quick-list" id="tasksPreview">
+      <li class="list-item"><span class="item-meta">Loading…</span></li>
     </ul>
   </div>
 
   <div class="card">
-    <div class="card-title heading">✨ Shopping Vault & Research</div>
-    <div class="wish-row">
-      <div class="wish-item-card">
-        <b>Radiator Covers</b>
-        <div class="item-meta" style="margin: 4px 0;">Found oak slatted cover.</div>
-        <a href="https://example.com" target="_blank" class="wish-link">View Link ↗</a>
-      </div>
+    <div class="card-title heading">🔬 Research in Progress</div>
+    <div id="researchPreview">
+      <div class="item-meta">Loading…</div>
     </div>
   </div>
 
@@ -204,6 +202,9 @@
     <button class="save-btn" onclick="saveSettings()">Apply Configuration</button>
   </div>
 </div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
 <script>
   const DEFAULT_CONFIG = {
@@ -289,6 +290,131 @@
   if (!localStorage.getItem("parentPlannerFirebaseConfig")) {
     localStorage.setItem("parentPlannerFirebaseConfig", JSON.stringify(DEFAULT_CONFIG));
   }
+
+  // --- Dashboard live previews (read-only) ---
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+  }
+
+  function todayStr() {
+    const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+
+  function timeAgo(ms) {
+    if (!ms) return "";
+    const diff = Date.now() - ms;
+    const min = 60000, hr = min * 60, day = hr * 24;
+    if (diff < min) return "just now";
+    if (diff < hr) return Math.floor(diff / min) + "m ago";
+    if (diff < day) return Math.floor(diff / hr) + "h ago";
+    if (diff < day * 30) return Math.floor(diff / day) + "d ago";
+    return new Date(ms).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  }
+
+  function plainTextPreview(html, maxLen) {
+    maxLen = maxLen || 130;
+    const tmp = document.createElement("div");
+    tmp.innerHTML = html || "";
+    const text = tmp.textContent.replace(/\s+/g, " ").trim();
+    if (!text) return "";
+    if (text.length <= maxLen) return text;
+    return "…" + text.slice(-maxLen);
+  }
+
+  function lastLinkInfo(html) {
+    const tmp = document.createElement("div");
+    tmp.innerHTML = html || "";
+    const links = tmp.querySelectorAll("a[href]");
+    if (!links.length) return null;
+    const last = links[links.length - 1];
+    return { href: last.getAttribute("href"), text: (last.textContent || last.getAttribute("href")).trim() };
+  }
+
+  function initDashboardPreviews() {
+    try {
+      const config = loadSavedConfig();
+      firebase.initializeApp(config);
+      const db = firebase.database();
+
+      db.ref("events").on("value", snapshot => {
+        const events = snapshot.val() || {};
+        const today = todayStr();
+        const upcoming = Object.values(events)
+          .filter(e => e.date >= today)
+          .sort((a, b) => (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")))
+          .slice(0, 3);
+        const list = document.getElementById("eventsPreview");
+        if (!upcoming.length) {
+          list.innerHTML = `<li class="list-item"><span class="item-meta">Nothing scheduled yet</span></li>`;
+          return;
+        }
+        list.innerHTML = upcoming.map(e => {
+          const d = new Date(e.date + "T00:00:00");
+          const dateLabel = d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + (e.time ? `, ${e.time}` : "");
+          return `<li class="list-item">
+            <div><b>${esc(e.title || "Untitled")}</b>${e.location ? `<div class="item-meta">${esc(e.location)}</div>` : ""}</div>
+            <span style="font-size:12px; font-weight: 800; color:var(--breast);">${esc(dateLabel)}</span>
+          </li>`;
+        }).join("");
+        list.onclick = () => launchApp("./calendar.html", "Shared Calendar");
+      });
+
+      db.ref("tasks").on("value", snapshot => {
+        const tasks = snapshot.val() || {};
+        const today = todayStr();
+        const active = Object.values(tasks)
+          .filter(t => t.status !== "done")
+          .sort((a, b) => (a.dueDate || "9999").localeCompare(b.dueDate || "9999"))
+          .slice(0, 3);
+        const list = document.getElementById("tasksPreview");
+        if (!active.length) {
+          list.innerHTML = `<li class="list-item"><span class="item-meta">No active tasks</span></li>`;
+          return;
+        }
+        list.innerHTML = active.map(t => {
+          const overdue = t.dueDate && t.dueDate < today;
+          const dueLabel = t.dueDate ? new Date(t.dueDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "No due date";
+          const badgeClass = t.status === "progress" ? "status-progress" : "status-todo";
+          const badgeText = t.status === "progress" ? "In Progress" : "To Do";
+          return `<li class="list-item">
+            <div><b>${esc(t.title || "Untitled")}</b><div class="item-meta">${overdue ? "⚠ Overdue: " : "Due: "}${esc(dueLabel)}</div></div>
+            <span class="todo-badge ${badgeClass}">${badgeText}</span>
+          </li>`;
+        }).join("");
+        list.onclick = () => launchApp("./tasks.html", "Active Tasks");
+      });
+
+      db.ref("notebooks").on("value", snapshot => {
+        const notebooks = snapshot.val() || {};
+        const starred = Object.entries(notebooks)
+          .filter(([id, nb]) => nb.starred)
+          .sort((a, b) => (b[1].updatedAt || 0) - (a[1].updatedAt || 0));
+        const container = document.getElementById("researchPreview");
+        if (!starred.length) {
+          container.innerHTML = `<div class="item-meta">Star a note in Notebooks to pin your in-progress research here.</div>`;
+          return;
+        }
+        container.innerHTML = starred.map(([id, nb]) => {
+          const link = lastLinkInfo(nb.content);
+          const preview = plainTextPreview(nb.content);
+          return `
+            <div class="research-item" onclick="launchApp('./notes.html?open=${id}', 'Shared Notebooks')">
+              <div class="research-top">
+                <div class="research-title">⭐ ${esc(nb.title || "Untitled")}</div>
+                <div class="research-updated">${esc(timeAgo(nb.updatedAt))}</div>
+              </div>
+              ${preview ? `<div class="research-preview">${esc(preview)}</div>` : ""}
+              ${link ? `<a href="${esc(link.href)}" target="_blank" class="research-link-chip" onclick="event.stopPropagation()">🔗 ${esc(link.text.length > 30 ? link.text.slice(0, 30) + "…" : link.text)}</a>` : ""}
+            </div>`;
+        }).join("");
+      });
+    } catch (e) {
+      console.error("Dashboard preview sync failed:", e);
+    }
+  }
+
+  initDashboardPreviews();
 </script>
 </body>
 </html>

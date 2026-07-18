@@ -33,10 +33,12 @@
     background: var(--card); border: 1px solid var(--line);
     width: 50px; height: 50px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 24px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    z-index: 9999; transition: transform 0.2s ease;
+    font-size: 24px; cursor: grab; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    z-index: 9999; transition: transform 0.15s ease, box-shadow 0.15s ease;
+    touch-action: none; user-select: none;
   }
   .home-btn:active { transform: scale(0.9); }
+  .home-btn.dragging { cursor: grabbing; transition: none; }
 
   .sidebar {
     width: 200px; background: var(--card); border-right: 1px solid var(--line);
@@ -58,19 +60,34 @@
     font-size: 13px; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center;
   }
   .notebook-item.active { background: var(--breast-soft); color: var(--ink); }
+  .notebook-item-left { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; }
+  .notebook-item-left span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .notebook-item-right { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+  .star-btn {
+    background: transparent; border: none; font-size: 14px; cursor: pointer; padding: 2px;
+    color: var(--ink-soft); flex-shrink: 0; line-height: 1;
+  }
+  .star-btn.starred { color: var(--formula, #FFB238); }
   .delete-notebook-btn {
     background: transparent; border: none; font-size: 12px; color: var(--ink-soft); cursor: pointer; display: none;
   }
   .notebook-item:hover .delete-notebook-btn { display: inline-block; }
 
-  .editor-canvas { 
-    flex: 1; display: flex; flex-direction: column; background: var(--bg); 
-    padding: 20px; height: 100%; position: relative; z-index: 1;
-  }
-  .editor-header { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+  .editor-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
   .notebook-title-input {
     background: transparent; border: none; font-size: 24px; font-weight: 800;
     color: var(--ink); width: 100%; outline: none;
+  }
+  .editor-star-btn {
+    background: var(--card); border: 1.5px solid var(--line); color: var(--ink-soft);
+    width: 36px; height: 36px; border-radius: 10px; font-size: 17px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .editor-star-btn.starred { color: var(--formula, #FFB238); border-color: var(--formula, #FFB238); background: #FFF6E5; }
+
+  .editor-canvas {
+    flex: 1; display: flex; flex-direction: column; background: var(--bg);
+    padding: 20px; height: 100%; position: relative; z-index: 1;
   }
   .editor-body {
     flex: 1; background: var(--card); border: 1.5px solid var(--line);
@@ -78,7 +95,23 @@
     outline: none; overflow-y: auto; margin-bottom: 4px;
   }
   .editor-body img { max-width: 100%; border-radius: 10px; margin: 8px 0; }
+  .editor-body ul, .editor-body ol { margin: 8px 0; padding-left: 22px; }
+  .editor-body li { margin-bottom: 4px; }
+  .editor-body a { color: var(--breast); text-decoration: underline; }
+  .editor-body b, .editor-body strong { font-weight: 800; }
   .editor-status { font-size: 11px; color: var(--ink-soft); margin-top: 6px; text-align: right; }
+
+  .editor-toolbar {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;
+  }
+  .tb-btn {
+    background: var(--card); border: 1.5px solid var(--line); color: var(--ink);
+    border-radius: 10px; width: 34px; height: 34px; font-size: 14px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .tb-btn:active { transform: scale(0.92); }
+  .tb-btn.wide { width: auto; padding: 0 10px; font-size: 13px; }
+  .tb-sep { width: 1px; background: var(--line); margin: 4px 2px; }
 </style>
 </head>
 <body>
@@ -94,14 +127,27 @@
 <div class="editor-canvas">
   <div class="editor-header">
     <input type="text" id="notebookTitle" class="notebook-title-input heading" placeholder="Untitled Notes..." oninput="onTitleChanged()" />
+    <button type="button" id="editorStarBtn" class="editor-star-btn" title="Star this note to pin it on the dashboard" onclick="toggleActiveStar()">☆</button>
   </div>
-  
+
+  <div class="editor-toolbar">
+    <button type="button" class="tb-btn" title="Bold" onclick="format('bold')"><b>B</b></button>
+    <button type="button" class="tb-btn" title="Italic" onclick="format('italic')"><i>I</i></button>
+    <button type="button" class="tb-btn" title="Underline" onclick="format('underline')"><u>U</u></button>
+    <div class="tb-sep"></div>
+    <button type="button" class="tb-btn" title="Bullet list" onclick="format('insertUnorderedList')">•≡</button>
+    <button type="button" class="tb-btn" title="Numbered list" onclick="format('insertOrderedList')">1.≡</button>
+    <div class="tb-sep"></div>
+    <button type="button" class="tb-btn" title="Add link" onclick="insertLink()">🔗</button>
+    <button type="button" class="tb-btn wide" title="Clear formatting" onclick="format('removeFormat')">Clear</button>
+  </div>
+
   <div id="editor" class="editor-body" contenteditable="true" placeholder="Start typing or paste an image here..." oninput="onContentChanged()"></div>
   
   <div id="status" class="editor-status">Offline</div>
 </div>
 
-<button class="home-btn" onclick="goHome()">🏡</button>
+<button id="homeBubble" class="home-btn">🏡</button>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -111,6 +157,7 @@
   let activeId = null;
   let notebooks = {};
   let saveTimeout = null;
+  let pendingOpenId = new URLSearchParams(window.location.search).get("open");
 
   window.addEventListener("message", function(event) {
     if (event.data && event.data.type === "SYNC_FIREBASE_CONFIG") {
@@ -135,7 +182,10 @@
     dbRef.on("value", snapshot => {
       notebooks = snapshot.val() || {};
       renderNotebookList();
-      if (activeId && notebooks[activeId]) {
+      if (pendingOpenId && notebooks[pendingOpenId]) {
+        selectNotebook(pendingOpenId);
+        pendingOpenId = null;
+      } else if (activeId && notebooks[activeId]) {
         updateEditorDisplay();
       } else if (Object.keys(notebooks).length > 0) {
         selectNotebook(Object.keys(notebooks)[0]);
@@ -147,15 +197,25 @@
     const list = document.getElementById("notebookList");
     list.innerHTML = "";
     Object.keys(notebooks).forEach(id => {
+      const nb = notebooks[id];
       const item = document.createElement("li");
       item.className = `notebook-item ${id === activeId ? 'active' : ''}`;
       item.onclick = () => selectNotebook(id);
       item.innerHTML = `
-        <span>📂 ${notebooks[id].title || 'Untitled'}</span>
-        <button class="delete-notebook-btn" onclick="event.stopPropagation(); deleteNotebook('${id}')">✕</button>
+        <div class="notebook-item-left">
+          <span>📂 ${esc(nb.title || 'Untitled')}</span>
+        </div>
+        <div class="notebook-item-right">
+          <button class="star-btn ${nb.starred ? 'starred' : ''}" title="${nb.starred ? 'Unstar' : 'Star (pins to dashboard)'}" onclick="event.stopPropagation(); toggleStar('${id}')">${nb.starred ? '★' : '☆'}</button>
+          <button class="delete-notebook-btn" onclick="event.stopPropagation(); deleteNotebook('${id}')">✕</button>
+        </div>
       `;
       list.appendChild(item);
     });
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
   }
 
   function createNewNotebook() {
@@ -163,7 +223,9 @@
     const newId = Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
     dbRef.child(newId).set({
       title: "New Notebook",
-      content: ""
+      content: "",
+      starred: false,
+      updatedAt: Date.now()
     });
     activeId = newId;
   }
@@ -184,12 +246,39 @@
     if (document.activeElement !== document.getElementById("notebookTitle")) {
       document.getElementById("notebookTitle").value = note.title || "";
     }
+    const starBtn = document.getElementById("editorStarBtn");
+    starBtn.classList.toggle("starred", !!note.starred);
+    starBtn.innerText = note.starred ? "★" : "☆";
+  }
+
+  function format(cmd) {
+    document.getElementById("editor").focus();
+    document.execCommand(cmd, false, null);
+    onContentChanged();
+  }
+
+  function insertLink() {
+    const url = prompt("Link URL (e.g. https://example.com):");
+    if (!url) return;
+    document.getElementById("editor").focus();
+    document.execCommand("createLink", false, url);
+    onContentChanged();
+  }
+
+  function toggleStar(id) {
+    if (!dbRef || !notebooks[id]) return;
+    dbRef.child(id).update({ starred: !notebooks[id].starred, updatedAt: Date.now() });
+  }
+
+  function toggleActiveStar() {
+    if (!activeId) return;
+    toggleStar(activeId);
   }
 
   function onTitleChanged() {
     if (!activeId || !dbRef) return;
     const val = document.getElementById("notebookTitle").value;
-    dbRef.child(activeId).child("title").set(val);
+    dbRef.child(activeId).update({ title: val, updatedAt: Date.now() });
   }
 
   function onContentChanged() {
@@ -198,7 +287,7 @@
     
     clearTimeout(saveTimeout);
     saveTimeout = setTimeout(() => {
-      dbRef.child(activeId).child("content").set(val);
+      dbRef.child(activeId).update({ content: val, updatedAt: Date.now() });
     }, 400);
   }
 
@@ -208,6 +297,79 @@
       dbRef.child(id).remove();
     }
   }
+
+  (function () {
+    const btn = document.getElementById("homeBubble");
+    if (!btn) return;
+    const STORAGE_KEY = "homeBubblePos";
+    const DRAG_THRESHOLD = 6;
+    let pointerId = null, startX = 0, startY = 0, offsetX = 0, offsetY = 0, moved = false;
+
+    function clamp(x, y) {
+      const margin = 6;
+      const maxX = window.innerWidth - btn.offsetWidth - margin;
+      const maxY = window.innerHeight - btn.offsetHeight - margin;
+      return { x: Math.min(Math.max(x, margin), maxX), y: Math.min(Math.max(y, margin), maxY) };
+    }
+    function applyPos(x, y) {
+      btn.style.left = x + "px";
+      btn.style.top = y + "px";
+      btn.style.right = "auto";
+      btn.style.bottom = "auto";
+    }
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+      if (saved && typeof saved.x === "number") {
+        const p = clamp(saved.x, saved.y);
+        applyPos(p.x, p.y);
+      }
+    } catch (e) {}
+
+    btn.addEventListener("pointerdown", function (e) {
+      pointerId = e.pointerId;
+      moved = false;
+      const rect = btn.getBoundingClientRect();
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+      startX = e.clientX;
+      startY = e.clientY;
+      btn.setPointerCapture(pointerId);
+    });
+
+    btn.addEventListener("pointermove", function (e) {
+      if (pointerId === null) return;
+      const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
+      if (dist > DRAG_THRESHOLD) {
+        if (!moved) btn.classList.add("dragging");
+        moved = true;
+        const p = clamp(e.clientX - offsetX, e.clientY - offsetY);
+        applyPos(p.x, p.y);
+      }
+    });
+
+    function endDrag() {
+      if (pointerId === null) return;
+      btn.releasePointerCapture(pointerId);
+      pointerId = null;
+      btn.classList.remove("dragging");
+      if (moved) {
+        const rect = btn.getBoundingClientRect();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ x: rect.left, y: rect.top }));
+      } else {
+        goHome();
+      }
+    }
+    btn.addEventListener("pointerup", endDrag);
+    btn.addEventListener("pointercancel", endDrag);
+
+    window.addEventListener("resize", function () {
+      if (btn.style.left) {
+        const rect = btn.getBoundingClientRect();
+        const p = clamp(rect.left, rect.top);
+        applyPos(p.x, p.y);
+      }
+    });
+  })();
 
   document.getElementById("editor").addEventListener("paste", function(e) {
     const items = (e.clipboardData || e.originalEvent.clipboardData).items;

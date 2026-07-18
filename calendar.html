@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+<title>Shared Calendar 📅</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 font-size=%2290%22>&#x1F4C5;</svg>">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #FFF8F0;
+    --card: #FFFFFF;
+    --ink: #3A2E2C;
+    --ink-soft: #8A7B72;
+    --line: #F1E4D6;
+    --breast: #FF8A73;
+    --breast-soft: #FFE7E0;
+    --pumping: #6C7FE3;
+    --pumping-soft: #E4E7FC;
+    --mint: #3FBF9E;
+    --mint-soft: #DFF6EF;
+    --formula: #FFB238;
+    --formula-soft: #FFF1D6;
+    --danger: #E85D5D;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--bg); }
+  body { font-family: 'Nunito', system-ui, sans-serif; color: var(--ink); }
+  .heading { font-family: 'Baloo 2', 'Nunito', sans-serif; }
+  button, input, textarea { font-family: inherit; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 10px; }
+  .tap:active { transform: scale(0.96); }
+
+  #app {
+    max-width: 600px; margin: 0 auto; min-height: 100vh;
+    display: flex; flex-direction: column; padding: 20px 16px 100px; gap: 16px;
+  }
+
+  .header {
+    background: linear-gradient(135deg, var(--breast-soft), var(--pumping-soft));
+    border: 1px solid var(--line); border-radius: 24px; padding: 20px 20px 16px;
+  }
+  .header-title { font-size: 24px; font-weight: 800; margin: 0; }
+  .header-sub { font-size: 12.5px; font-weight: 700; color: var(--ink-soft); margin-top: 4px; }
+  .sync-status-pill {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700;
+    padding: 5px 10px; border-radius: 999px; margin-top: 10px; background: rgba(255,255,255,0.6);
+  }
+  .sync-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .sync-dot.on { background: var(--mint); }
+  .sync-dot.off { background: #C9BEB4; }
+
+  .month-nav { display: flex; align-items: center; justify-content: space-between; }
+  .month-label { font-weight: 800; font-size: 17px; }
+  .nav-arrow {
+    width: 36px; height: 36px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--card);
+    display: flex; align-items: center; justify-content: center; color: var(--ink); font-size: 16px; font-weight: 800;
+  }
+
+  .card { background: var(--card); border-radius: 20px; padding: 16px; border: 1px solid var(--line); }
+
+  .weekday-grid, .day-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .weekday { text-align: center; font-size: 10.5px; font-weight: 800; color: var(--ink-soft); padding-bottom: 6px; }
+  .day-cell {
+    position: relative; aspect-ratio: 1; border-radius: 10px; border: 1.5px solid transparent;
+    background: transparent; color: var(--ink); font-weight: 700; font-size: 12.5px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .day-cell.other-month { color: var(--ink-soft); opacity: 0.35; }
+  .day-cell.today { border-color: var(--breast); }
+  .day-cell.selected { background: var(--breast); color: #fff; }
+  .day-dot {
+    position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+    width: 4px; height: 4px; border-radius: 50%; background: var(--pumping);
+  }
+  .day-cell.selected .day-dot { background: #fff; }
+
+  .section-title { font-weight: 800; font-size: 15px; display: flex; align-items: center; justify-content: space-between; }
+  .event-row {
+    display: flex; gap: 10px; align-items: flex-start; background: var(--bg);
+    border-radius: 14px; padding: 11px 12px; margin-top: 10px;
+  }
+  .event-row.overdue { border: 1.5px solid var(--breast); background: var(--breast-soft); }
+  .event-icon {
+    width: 36px; height: 36px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0; background: var(--pumping-soft);
+  }
+  .event-main { flex: 1; min-width: 0; }
+  .event-top { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+  .event-title { font-weight: 800; font-size: 13.5px; }
+  .event-when { font-size: 11.5px; color: var(--ink-soft); font-weight: 700; white-space: nowrap; }
+  .event-meta { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  .event-actions { display: flex; gap: 4px; flex-shrink: 0; }
+  .icon-btn {
+    background: transparent; border: none; color: var(--ink-soft); padding: 4px; font-size: 14px; cursor: pointer;
+  }
+  .empty-state {
+    text-align: center; color: var(--ink-soft); font-size: 13px; padding: 20px 12px;
+    background: var(--bg); border-radius: 14px; border: 1.5px dashed var(--line); margin-top: 10px;
+  }
+
+  .fab {
+    position: fixed; bottom: 90px; left: 20px;
+    background: var(--mint); color: #fff; border: none; border-radius: 999px;
+    padding: 14px 18px; font-weight: 800; font-size: 14px; box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    display: flex; align-items: center; gap: 6px; z-index: 50;
+  }
+
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(58,46,44,0.45); z-index: 100;
+    display: none; align-items: flex-end; justify-content: center;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal-sheet {
+    width: 100%; max-width: 480px; background: var(--card); border-radius: 20px 20px 0 0;
+    padding: 18px 18px 24px; max-height: 88vh; overflow-y: auto;
+  }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .modal-title { font-weight: 800; font-size: 17px; }
+  .modal-close { background: var(--bg); border: none; border-radius: 10px; width: 30px; height: 30px; color: var(--ink); font-size: 16px; }
+  .field-label { font-size: 11.5px; font-weight: 800; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 5px; display: block; }
+  .field-block { margin-bottom: 14px; }
+  input[type="text"], input[type="date"], input[type="time"], textarea {
+    width: 100%; padding: 10px; border-radius: 12px; border: 1.5px solid var(--line);
+    font-size: 14px; background: var(--card); color: var(--ink);
+  }
+  textarea { resize: none; min-height: 60px; }
+  .row-flex { display: flex; gap: 8px; }
+  .save-btn {
+    width: 100%; padding: 13px 0; border-radius: 14px; border: none; background: var(--mint); color: #fff;
+    font-weight: 800; font-size: 15px; margin-top: 6px;
+  }
+  .delete-link { text-align: center; color: var(--danger); font-weight: 700; font-size: 13px; margin-top: 12px; cursor: pointer; }
+
+  .home-floating-btn {
+    position: fixed; bottom: 20px; right: 20px;
+    background: var(--card); border: 1.5px solid var(--line);
+    width: 48px; height: 48px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; cursor: grab; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    z-index: 99; transition: transform 0.15s ease, box-shadow 0.15s ease;
+    touch-action: none; user-select: none;
+  }
+  .home-floating-btn:active { transform: scale(0.92); }
+  .home-floating-btn.dragging { cursor: grabbing; transition: none; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="header">
+    <h1 class="header-title heading">📅 Shared Calendar</h1>
+    <div class="header-sub">Appointments, milestones & house stuff</div>
+    <span class="sync-status-pill" id="syncPill"><span class="sync-dot off" id="syncDot"></span><span id="syncText">Connecting…</span></span>
+  </div>
+
+  <div class="card">
+    <div class="month-nav">
+      <button class="nav-arrow tap" onclick="shiftMonth(-1)">‹</button>
+      <div class="month-label heading" id="monthLabel"></div>
+      <button class="nav-arrow tap" onclick="shiftMonth(1)">›</button>
+    </div>
+    <div class="weekday-grid" style="margin-top:12px;">
+      <div class="weekday">Mo</div><div class="weekday">Tu</div><div class="weekday">We</div>
+      <div class="weekday">Th</div><div class="weekday">Fr</div><div class="weekday">Sa</div><div class="weekday">Su</div>
+    </div>
+    <div class="day-grid" id="dayGrid" style="margin-top:4px;"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title heading" id="selectedDayLabel">Events</div>
+    <div id="dayEventsList"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title heading">Upcoming</div>
+    <div id="upcomingList"></div>
+  </div>
+</div>
+
+<button class="fab tap" onclick="openEventModal()">＋ Add Event</button>
+
+<div class="modal-backdrop" id="eventModal" onclick="if(event.target===this) closeEventModal()">
+  <div class="modal-sheet">
+    <div class="modal-head">
+      <div class="modal-title heading" id="modalTitle">New Event</div>
+      <button class="modal-close" onclick="closeEventModal()">✕</button>
+    </div>
+    <div class="field-block">
+      <label class="field-label">Title</label>
+      <input type="text" id="fTitle" placeholder="6-week baby check" />
+    </div>
+    <div class="row-flex">
+      <div class="field-block" style="flex:1;">
+        <label class="field-label">Date</label>
+        <input type="date" id="fDate" />
+      </div>
+      <div class="field-block" style="flex:1;">
+        <label class="field-label">Time (optional)</label>
+        <input type="time" id="fTime" />
+      </div>
+    </div>
+    <div class="field-block">
+      <label class="field-label">Location</label>
+      <input type="text" id="fLocation" placeholder="Norwich Medical Centre" />
+    </div>
+    <div class="field-block">
+      <label class="field-label">Notes</label>
+      <textarea id="fNotes" placeholder="Anything else worth remembering"></textarea>
+    </div>
+    <button class="save-btn tap" onclick="saveEvent()">Save Event</button>
+    <div class="delete-link" id="deleteLink" style="display:none;" onclick="deleteEvent()">Delete this event</div>
+  </div>
+</div>
+
+<button id="homeBubble" class="home-floating-btn">🏡</button>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<script>
+  let dbRef = null;
+  let events = {};
+  let viewMonth = new Date();
+  viewMonth.setDate(1);
+  let selectedDate = fmtDate(new Date());
+  let editingId = null;
+
+  window.addEventListener("message", function (event) {
+    if (event.data && event.data.type === "SYNC_FIREBASE_CONFIG") {
+      initializeFirebase(event.data.config);
+    }
+  });
+
+  function initializeFirebase(config) {
+    if (firebase.apps && firebase.apps.length) firebase.apps.forEach(a => a.delete());
+    firebase.initializeApp(config);
+    const db = firebase.database();
+    dbRef = db.ref("events");
+
+    document.getElementById("syncDot").className = "sync-dot on";
+    document.getElementById("syncText").innerText = "Synced";
+
+    dbRef.on("value", snapshot => {
+      events = snapshot.val() || {};
+      renderAll();
+    });
+
+    dbRef.on("value", () => {}, err => {
+      document.getElementById("syncDot").className = "sync-dot off";
+      document.getElementById("syncText").innerText = "Sync error";
+    });
+  }
+
+  function fmtDate(d) {
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+
+  function shiftMonth(delta) {
+    viewMonth.setMonth(viewMonth.getMonth() + delta);
+    renderCalendar();
+  }
+
+  function renderAll() {
+    renderCalendar();
+    renderDayEvents();
+    renderUpcoming();
+  }
+
+  function eventsOnDate(dateStr) {
+    return Object.entries(events).filter(([id, e]) => e.date === dateStr).sort((a, b) => (a[1].time || "").localeCompare(b[1].time || ""));
+  }
+
+  function renderCalendar() {
+    document.getElementById("monthLabel").innerText = viewMonth.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+    const grid = document.getElementById("dayGrid");
+    grid.innerHTML = "";
+    const year = viewMonth.getFullYear(), month = viewMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    let startOffset = (firstDay.getDay() + 6) % 7; // Monday-first
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
+    const todayStr = fmtDate(new Date());
+
+    const cells = [];
+    for (let i = startOffset; i > 0; i--) {
+      cells.push({ day: daysInPrevMonth - i + 1, other: true, dateStr: null });
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = year + "-" + String(month + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+      cells.push({ day: d, other: false, dateStr });
+    }
+    while (cells.length % 7 !== 0) {
+      cells.push({ day: cells.length, other: true, dateStr: null });
+    }
+
+    cells.forEach(c => {
+      const div = document.createElement("div");
+      div.className = "day-cell" + (c.other ? " other-month" : "");
+      if (c.dateStr === todayStr) div.classList.add("today");
+      if (c.dateStr === selectedDate) div.classList.add("selected");
+      div.innerText = c.day;
+      if (c.dateStr && eventsOnDate(c.dateStr).length) {
+        const dot = document.createElement("div");
+        dot.className = "day-dot";
+        div.appendChild(dot);
+      }
+      if (c.dateStr) {
+        div.onclick = () => { selectedDate = c.dateStr; renderCalendar(); renderDayEvents(); };
+      }
+      grid.appendChild(div);
+    });
+  }
+
+  function renderDayEvents() {
+    const label = document.getElementById("selectedDayLabel");
+    const d = new Date(selectedDate + "T00:00:00");
+    label.innerText = d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+
+    const list = document.getElementById("dayEventsList");
+    const items = eventsOnDate(selectedDate);
+    if (!items.length) {
+      list.innerHTML = `<div class="empty-state">No events on this day. Tap "Add Event" to create one.</div>`;
+      return;
+    }
+    list.innerHTML = items.map(([id, e]) => eventRowHtml(id, e)).join("");
+  }
+
+  function renderUpcoming() {
+    const todayStr = fmtDate(new Date());
+    const items = Object.entries(events)
+      .filter(([id, e]) => e.date >= todayStr)
+      .sort((a, b) => (a[1].date + (a[1].time || "")).localeCompare(b[1].date + (b[1].time || "")))
+      .slice(0, 6);
+    const list = document.getElementById("upcomingList");
+    if (!items.length) {
+      list.innerHTML = `<div class="empty-state">Nothing coming up yet.</div>`;
+      return;
+    }
+    list.innerHTML = items.map(([id, e]) => eventRowHtml(id, e, true)).join("");
+  }
+
+  function eventRowHtml(id, e, showDate) {
+    const d = new Date(e.date + "T00:00:00");
+    const dateLabel = showDate ? d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+    const whenLabel = [dateLabel, e.time || ""].filter(Boolean).join(" · ");
+    return `
+      <div class="event-row">
+        <div class="event-icon">📌</div>
+        <div class="event-main">
+          <div class="event-top">
+            <div class="event-title">${esc(e.title || "Untitled event")}</div>
+            <div class="event-when">${esc(whenLabel)}</div>
+          </div>
+          ${e.location ? `<div class="event-meta">📍 ${esc(e.location)}</div>` : ""}
+          ${e.notes ? `<div class="event-meta">${esc(e.notes)}</div>` : ""}
+        </div>
+        <div class="event-actions">
+          <button class="icon-btn tap" onclick="openEventModal('${id}')">✎</button>
+        </div>
+      </div>`;
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+  }
+
+  function openEventModal(id) {
+    editingId = id || null;
+    document.getElementById("modalTitle").innerText = id ? "Edit Event" : "New Event";
+    document.getElementById("deleteLink").style.display = id ? "block" : "none";
+    if (id && events[id]) {
+      const e = events[id];
+      document.getElementById("fTitle").value = e.title || "";
+      document.getElementById("fDate").value = e.date || selectedDate;
+      document.getElementById("fTime").value = e.time || "";
+      document.getElementById("fLocation").value = e.location || "";
+      document.getElementById("fNotes").value = e.notes || "";
+    } else {
+      document.getElementById("fTitle").value = "";
+      document.getElementById("fDate").value = selectedDate;
+      document.getElementById("fTime").value = "";
+      document.getElementById("fLocation").value = "";
+      document.getElementById("fNotes").value = "";
+    }
+    document.getElementById("eventModal").classList.add("open");
+  }
+
+  function closeEventModal() {
+    document.getElementById("eventModal").classList.remove("open");
+  }
+
+  function saveEvent() {
+    if (!dbRef) { alert("Not connected yet — please wait a moment and try again."); return; }
+    const title = document.getElementById("fTitle").value.trim();
+    const date = document.getElementById("fDate").value;
+    if (!title || !date) { alert("Please add a title and date."); return; }
+    const payload = {
+      title,
+      date,
+      time: document.getElementById("fTime").value,
+      location: document.getElementById("fLocation").value.trim(),
+      notes: document.getElementById("fNotes").value.trim(),
+    };
+    if (editingId) {
+      dbRef.child(editingId).update(payload);
+    } else {
+      const newId = Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+      dbRef.child(newId).set(payload);
+    }
+    closeEventModal();
+  }
+
+  function deleteEvent() {
+    if (!editingId || !dbRef) return;
+    if (confirm("Delete this event?")) {
+      dbRef.child(editingId).remove();
+      closeEventModal();
+    }
+  }
+
+  renderCalendar();
+  renderDayEvents();
+
+  // --- Draggable home bubble ---
+  (function () {
+    const btn = document.getElementById("homeBubble");
+    if (!btn) return;
+    const STORAGE_KEY = "homeBubblePos";
+    const DRAG_THRESHOLD = 6;
+    let pointerId = null, startX = 0, startY = 0, offsetX = 0, offsetY = 0, moved = false;
+    function clamp(x, y) {
+      const margin = 6;
+      const maxX = window.innerWidth - btn.offsetWidth - margin;
+      const maxY = window.innerHeight - btn.offsetHeight - margin;
+      return { x: Math.min(Math.max(x, margin), maxX), y: Math.min(Math.max(y, margin), maxY) };
+    }
+    function applyPos(x, y) {
+      btn.style.left = x + "px"; btn.style.top = y + "px"; btn.style.right = "auto"; btn.style.bottom = "auto";
+    }
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+      if (saved && typeof saved.x === "number") { const p = clamp(saved.x, saved.y); applyPos(p.x, p.y); }
+    } catch (e) {}
+    btn.addEventListener("pointerdown", function (e) {
+      pointerId = e.pointerId; moved = false;
+      const rect = btn.getBoundingClientRect();
+      offsetX = e.clientX - rect.left; offsetY = e.clientY - rect.top;
+      startX = e.clientX; startY = e.clientY;
+      btn.setPointerCapture(pointerId);
+    });
+    btn.addEventListener("pointermove", function (e) {
+      if (pointerId === null) return;
+      const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
+      if (dist > DRAG_THRESHOLD) {
+        if (!moved) btn.classList.add("dragging");
+        moved = true;
+        const p = clamp(e.clientX - offsetX, e.clientY - offsetY);
+        applyPos(p.x, p.y);
+      }
+    });
+    function endDrag() {
+      if (pointerId === null) return;
+      btn.releasePointerCapture(pointerId); pointerId = null; btn.classList.remove("dragging");
+      if (moved) {
+        const rect = btn.getBoundingClientRect();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ x: rect.left, y: rect.top }));
+      } else {
+        window.parent.postMessage({ type: "GO_HOME" }, "*");
+      }
+    }
+    btn.addEventListener("pointerup", endDrag);
+    btn.addEventListener("pointercancel", endDrag);
+    window.addEventListener("resize", function () {
+      if (btn.style.left) { const rect = btn.getBoundingClientRect(); const p = clamp(rect.left, rect.top); applyPos(p.x, p.y); }
+    });
+  })();
+</script>
+</body>
+</html>
