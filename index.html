@@ -141,11 +141,23 @@
     background: var(--mint); color: white; border: none; font-weight: 800;
     width: 100%; padding: 12px; border-radius: 12px; margin-top: 12px; cursor: pointer;
   }
+
+  .login-input {
+    width: 100%; padding: 11px 12px; border-radius: 12px; border: 1.5px solid var(--line);
+    margin-top: 8px; font-size: 14px; font-family: inherit; background: var(--bg); color: var(--ink);
+  }
+  .login-error {
+    color: var(--breast); font-size: 12px; font-weight: 700; margin-top: 8px; min-height: 14px;
+  }
+  .logout-btn {
+    background: transparent; color: var(--ink-soft); border: 1.5px solid var(--line); font-weight: 800;
+    width: 100%; padding: 10px; border-radius: 12px; margin-top: 8px; cursor: pointer; font-size: 13px;
+  }
 </style>
 </head>
 <body>
 
-<div id="dashboard">
+<div id="dashboard" style="display:none;">
   
   <div class="dash-header">
     <div>
@@ -204,31 +216,38 @@
 <div id="settingsOverlay" class="settings-overlay" onclick="closeSettings()">
   <div class="settings-card" onclick="event.stopPropagation()">
     <h3 class="heading" style="margin-top:0;">🏡 Shared DB Connection</h3>
+    <div class="dash-subtitle" id="settingsHint" style="margin-bottom:4px;"></div>
     <textarea id="configInput" placeholder='Paste Firebase config object...'></textarea>
     <button class="save-btn" onclick="saveSettings()">Apply Configuration</button>
+    <button class="logout-btn" onclick="handleLogout()">Sign Out</button>
+  </div>
+</div>
+
+<div id="loginOverlay" class="settings-overlay" style="display:none;">
+  <div class="settings-card" onclick="event.stopPropagation()">
+    <h3 class="heading" style="margin-top:0;">🔒 Sign In</h3>
+    <div class="dash-subtitle" style="margin-bottom:4px;">K &amp; J's Homepage — sign in to continue</div>
+    <input id="loginEmail" type="email" class="login-input" placeholder="Email" autocomplete="username" />
+    <input id="loginPassword" type="password" class="login-input" placeholder="Password" autocomplete="current-password"
+      onkeydown="if(event.key === 'Enter') handleLogin()" />
+    <div id="loginError" class="login-error"></div>
+    <button class="save-btn" onclick="handleLogin()">Sign In</button>
   </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
 <script>
-  const DEFAULT_CONFIG = {
-    apiKey: "AIzaSyA5gmCdGHzHgPsWy8ePH6FgX7VRqXtyrjQ",
-    authDomain: "little-log-e7980.firebaseapp.com",
-    databaseURL: "https://little-log-e7980-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "little-log-e7980",
-    storageBucket: "little-log-e7980.firebasestorage.app",
-    messagingSenderId: "796867051934",
-    appId: "1:796867051934:web:cf4a23983163a1f81e568f"
-  };
-
+  // Firebase config now lives ONLY in localStorage (per-device), never in source.
+  // Set it once per device via the Settings (gear icon) modal.
   function loadSavedConfig() {
     const local = localStorage.getItem("parentPlannerFirebaseConfig");
     if (local) {
       try { return JSON.parse(local); } catch(e) {}
     }
-    return DEFAULT_CONFIG;
+    return null;
   }
 
   function launchApp(url, name) {
@@ -273,11 +292,16 @@
 
   function openSettings() {
     const config = loadSavedConfig();
-    document.getElementById("configInput").value = JSON.stringify(config, null, 2);
+    document.getElementById("configInput").value = config ? JSON.stringify(config, null, 2) : "";
+    document.getElementById("settingsHint").textContent = config
+      ? "Paste a new config to switch projects."
+      : "Welcome! Paste your Firebase config below to connect this device.";
     document.getElementById("settingsOverlay").style.display = "flex";
   }
 
   function closeSettings() {
+    // Can't dismiss the modal until a config has actually been saved.
+    if (!loadSavedConfig()) return;
     document.getElementById("settingsOverlay").style.display = "none";
   }
 
@@ -286,15 +310,61 @@
     try {
       const obj = JSON.parse(val);
       localStorage.setItem("parentPlannerFirebaseConfig", JSON.stringify(obj));
-      closeSettings();
+      document.getElementById("settingsOverlay").style.display = "none";
       alert("Configuration Saved!");
+      initFirebase();
     } catch(e) {
       alert("Format error. Please verify your brackets and quotes.");
     }
   }
 
-  if (!localStorage.getItem("parentPlannerFirebaseConfig")) {
-    localStorage.setItem("parentPlannerFirebaseConfig", JSON.stringify(DEFAULT_CONFIG));
+  // --- Auth ---
+  function initFirebase() {
+    const config = loadSavedConfig();
+    if (!config) {
+      // First run on this device: force the settings modal open until a config is saved.
+      openSettings();
+      return;
+    }
+    if (!firebase.apps.length) {
+      firebase.initializeApp(config);
+    }
+    setupAuthListener();
+  }
+
+  function setupAuthListener() {
+    firebase.auth().onAuthStateChanged(function(user) {
+      const dashboard = document.getElementById("dashboard");
+      const loginOverlay = document.getElementById("loginOverlay");
+      if (user) {
+        loginOverlay.style.display = "none";
+        dashboard.style.display = "flex";
+        initDashboardPreviews();
+      } else {
+        loginOverlay.style.display = "flex";
+        dashboard.style.display = "none";
+      }
+    });
+  }
+
+  function handleLogin() {
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+    const errEl = document.getElementById("loginError");
+    errEl.textContent = "";
+    if (!email || !password) {
+      errEl.textContent = "Enter both email and password.";
+      return;
+    }
+    firebase.auth().signInWithEmailAndPassword(email, password)
+      .catch(err => { errEl.textContent = "Sign-in failed: " + err.message; });
+  }
+
+  function handleLogout() {
+    firebase.auth().signOut();
+    if (loadSavedConfig()) {
+      document.getElementById("settingsOverlay").style.display = "none";
+    }
   }
 
   // --- Dashboard live previews (read-only) ---
@@ -339,8 +409,6 @@
 
   function initDashboardPreviews() {
     try {
-      const config = loadSavedConfig();
-      firebase.initializeApp(config);
       const db = firebase.database();
 
       db.ref("events").on("value", snapshot => {
@@ -420,7 +488,7 @@
     }
   }
 
-  initDashboardPreviews();
+  initFirebase();
 </script>
 </body>
 </html>

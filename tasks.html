@@ -208,6 +208,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
 <script>
   let dbRef = null;
@@ -223,6 +224,24 @@
   function initializeFirebase(config) {
     if (firebase.apps && firebase.apps.length) firebase.apps.forEach(a => a.delete());
     firebase.initializeApp(config);
+
+    document.getElementById("syncText").innerText = "Signing in…";
+
+    // Data listeners only attach once Firebase Auth confirms a signed-in user.
+    // This shares the same-origin auth session started on the homepage.
+    firebase.auth().onAuthStateChanged(function (user) {
+      if (user) {
+        bindTasksRef();
+      } else {
+        if (dbRef) { try { dbRef.off(); } catch (e) {} }
+        dbRef = null;
+        document.getElementById("syncDot").className = "sync-dot off";
+        document.getElementById("syncText").innerText = "Signed out — open from the homepage";
+      }
+    });
+  }
+
+  function bindTasksRef() {
     const db = firebase.database();
     dbRef = db.ref("tasks");
 
@@ -232,6 +251,9 @@
     dbRef.on("value", snapshot => {
       tasks = snapshot.val() || {};
       renderBoard();
+    }, err => {
+      document.getElementById("syncDot").className = "sync-dot off";
+      document.getElementById("syncText").innerText = "Sync error";
     });
   }
 

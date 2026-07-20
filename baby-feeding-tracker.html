@@ -466,6 +466,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
 <script>
 /* =========================================================================
@@ -706,6 +707,10 @@ let state = {
   syncConnected: false,
   syncStatusMsg: "",
   syncConfigText: "",
+  authUser: null,
+  authEmail: "",
+  authPassword: "",
+  authErrorMsg: "",
   latestVersion: null,
   latestUrl: null,
   babyBirthIso: null,
@@ -1430,93 +1435,127 @@ function connectFirebase(configObj, { silent } = {}) {
       firebase.apps.forEach(a => a.delete());
     }
     firebase.initializeApp(configObj);
-    syncDb = firebase.database();
-    
-    // --- Existing Syncs ---
-    syncRef = syncDb.ref("entries");
-    syncFirstSnapshot = true;
-    syncRef.on("value", snapshot => {
-      const val = snapshot.val() || {};
-      const remoteEntries = Object.values(val);
-      if (syncFirstSnapshot) {
-        syncFirstSnapshot = false;
-        const localOnly = entriesMissingFrom(remoteEntries, state.entries);
-        localOnly.forEach(e => syncRef.child(e.id).set(e));
-      }
-      state.entries = remoteEntries.sort((a,b) => new Date(b.datetime) - new Date(a.datetime));
-      saveEntries();
-      render();
-    });
-
-    metaRef = syncDb.ref("meta");
-    metaRef.on("value", snap => {
-      const m = snap.val() || {};
-      state.latestVersion = m.latestVersion || null;
-      state.latestUrl = m.latestUrl || null;
-      if (m.babyBirthIso) setBabyBirth(m.babyBirthIso, { fromRemote: true });
-      render();
-    });
-
-    weightsRef = syncDb.ref("weights");
-    weightsFirstSnapshot = true;
-    weightsRef.on("value", snapshot => {
-      const val = snapshot.val() || {};
-      const remoteWeights = Object.values(val);
-      if (weightsFirstSnapshot) {
-        weightsFirstSnapshot = false;
-        const localOnly = weightsMissingFrom(remoteWeights, state.weights);
-        localOnly.forEach(w => weightsRef.child(w.id).set(w));
-      }
-      state.weights = remoteWeights.sort((a,b) => new Date(a.dateIso) - new Date(b.dateIso));
-      saveWeights();
-      render();
-    });
-
-    // --- Fact/Tip Listeners ---
-    factsFirstSnapshot = true;
-    syncDb.ref("facts").on("value", snapshot => {
-      const val = snapshot.val() || {};
-      const remoteFacts = Object.values(val).map(o => o.text);
-      if (factsFirstSnapshot) {
-        factsFirstSnapshot = false;
-        if (remoteFacts.length === 0 && state.facts.length > 0) {
-          // Nothing in Firebase yet — seed it with what's already on this device.
-          state.facts.forEach(f => syncDb.ref("facts").push({ text: f }));
-          return; // the push above will trigger this listener again with the seeded data
-        }
-      }
-      state.facts = remoteFacts;
-      saveFacts(state.facts);
-      render();
-    });
-
-    tipsFirstSnapshot = true;
-    syncDb.ref("tips").on("value", snapshot => {
-      const val = snapshot.val() || {};
-      const remoteTips = Object.values(val).map(o => o.text);
-      if (tipsFirstSnapshot) {
-        tipsFirstSnapshot = false;
-        if (remoteTips.length === 0 && state.topTips.length > 0) {
-          state.topTips.forEach(t => syncDb.ref("tips").push({ text: t }));
-          return;
-        }
-      }
-      state.topTips = remoteTips;
-      saveTopTips(state.topTips);
-      render();
-    });
-
     localStorage.setItem(FIREBASE_CONFIG_KEY, JSON.stringify(configObj));
-    state.syncConnected = true;
-    state.syncStatusMsg = "";
-    if (!silent) showToast("Connected — syncing with your partner 🔗");
+
+    // Refs only bind once Firebase Auth confirms who's signed in — see bindSyncRefs().
+    firebase.auth().onAuthStateChanged(function (user) {
+      state.authUser = user ? user.email : null;
+      if (user) {
+        state.authErrorMsg = "";
+        bindSyncRefs();
+      } else {
+        unbindSyncRefs();
+        state.syncConnected = false;
+      }
+      render();
+    });
+
+    if (!silent) showToast("Connected to project — sign in below to start syncing 🔗");
     render();
   } catch (e) {
     console.error("Firebase connect failed", e);
     state.syncStatusMsg = "Couldn't connect. Double-check the config you pasted and try again.";
     render();
   }
-} 
+}
+
+function bindSyncRefs() {
+  if (syncRef) return; // already bound for this session
+  syncDb = firebase.database();
+
+  // --- Existing Syncs ---
+  syncRef = syncDb.ref("entries");
+  syncFirstSnapshot = true;
+  syncRef.on("value", snapshot => {
+    const val = snapshot.val() || {};
+    const remoteEntries = Object.values(val);
+    if (syncFirstSnapshot) {
+      syncFirstSnapshot = false;
+      const localOnly = entriesMissingFrom(remoteEntries, state.entries);
+      localOnly.forEach(e => syncRef.child(e.id).set(e));
+    }
+    state.entries = remoteEntries.sort((a,b) => new Date(b.datetime) - new Date(a.datetime));
+    saveEntries();
+    render();
+  }, err => {
+    state.syncStatusMsg = "Sync error: " + err.message;
+    render();
+  });
+
+  metaRef = syncDb.ref("meta");
+  metaRef.on("value", snap => {
+    const m = snap.val() || {};
+    state.latestVersion = m.latestVersion || null;
+    state.latestUrl = m.latestUrl || null;
+    if (m.babyBirthIso) setBabyBirth(m.babyBirthIso, { fromRemote: true });
+    render();
+  });
+
+  weightsRef = syncDb.ref("weights");
+  weightsFirstSnapshot = true;
+  weightsRef.on("value", snapshot => {
+    const val = snapshot.val() || {};
+    const remoteWeights = Object.values(val);
+    if (weightsFirstSnapshot) {
+      weightsFirstSnapshot = false;
+      const localOnly = weightsMissingFrom(remoteWeights, state.weights);
+      localOnly.forEach(w => weightsRef.child(w.id).set(w));
+    }
+    state.weights = remoteWeights.sort((a,b) => new Date(a.dateIso) - new Date(b.dateIso));
+    saveWeights();
+    render();
+  });
+
+  // --- Fact/Tip Listeners ---
+  factsFirstSnapshot = true;
+  syncDb.ref("facts").on("value", snapshot => {
+    const val = snapshot.val() || {};
+    const remoteFacts = Object.values(val).map(o => o.text);
+    if (factsFirstSnapshot) {
+      factsFirstSnapshot = false;
+      if (remoteFacts.length === 0 && state.facts.length > 0) {
+        // Nothing in Firebase yet — seed it with what's already on this device.
+        state.facts.forEach(f => syncDb.ref("facts").push({ text: f }));
+        return; // the push above will trigger this listener again with the seeded data
+      }
+    }
+    state.facts = remoteFacts;
+    saveFacts(state.facts);
+    render();
+  });
+
+  tipsFirstSnapshot = true;
+  syncDb.ref("tips").on("value", snapshot => {
+    const val = snapshot.val() || {};
+    const remoteTips = Object.values(val).map(o => o.text);
+    if (tipsFirstSnapshot) {
+      tipsFirstSnapshot = false;
+      if (remoteTips.length === 0 && state.topTips.length > 0) {
+        state.topTips.forEach(t => syncDb.ref("tips").push({ text: t }));
+        return;
+      }
+    }
+    state.topTips = remoteTips;
+    saveTopTips(state.topTips);
+    render();
+  });
+
+  state.syncConnected = true;
+  state.syncStatusMsg = "";
+  showToast("Signed in — syncing with your partner 🔗");
+  render();
+}
+
+function unbindSyncRefs() {
+  if (syncRef) { try { syncRef.off(); } catch(e) {} }
+  if (metaRef) { try { metaRef.off(); } catch(e) {} }
+  if (weightsRef) { try { weightsRef.off(); } catch(e) {} }
+  if (syncDb) {
+    syncDb.ref("facts").off();
+    syncDb.ref("tips").off();
+  }
+  syncDb = null; syncRef = null; metaRef = null; weightsRef = null;
+}
 
 // Helper functions outside of connectFirebase
 function addCloudFact(text) {
@@ -1527,17 +1566,43 @@ function addCloudTip(text) {
   if (syncDb) syncDb.ref("tips").push({ text: text });
 }
 
-function disconnectSync() {
-  if (syncRef) { try { syncRef.off(); } catch(e) {} }
-  if (metaRef) { try { metaRef.off(); } catch(e) {} }
-  if (weightsRef) { try { weightsRef.off(); } catch(e) {} }
-  if (syncDb) {
-    syncDb.ref("facts").off();
-    syncDb.ref("tips").off();
+function handleSyncSignIn() {
+  const email = (state.authEmail || "").trim();
+  const password = state.authPassword || "";
+  state.authErrorMsg = "";
+  if (!email || !password) {
+    state.authErrorMsg = "Enter both email and password.";
+    render();
+    return;
   }
-  syncDb = null; syncRef = null; metaRef = null; weightsRef = null;
+  if (typeof firebase === "undefined" || !firebase.apps.length) {
+    state.authErrorMsg = "Paste and connect a Firebase config first.";
+    render();
+    return;
+  }
+  firebase.auth().signInWithEmailAndPassword(email, password)
+    .then(() => { state.authPassword = ""; })
+    .catch(err => {
+      state.authErrorMsg = "Sign-in failed: " + err.message;
+      render();
+    });
+}
+
+function handleSyncSignOut() {
+  if (typeof firebase !== "undefined" && firebase.apps.length) {
+    firebase.auth().signOut();
+  }
+}
+
+function disconnectSync() {
+  if (typeof firebase !== "undefined" && firebase.apps.length) {
+    firebase.auth().signOut();
+    firebase.apps.forEach(a => a.delete());
+  }
+  unbindSyncRefs();
   localStorage.removeItem(FIREBASE_CONFIG_KEY);
   state.syncConnected = false;
+  state.authUser = null;
   state.latestVersion = null;
   state.latestUrl = null;
   showToast("Sync disconnected — back to local-only");
@@ -1985,14 +2050,15 @@ function renderSyncModal() {
       </div>
 
       <div class="sync-steps">
-        This uses <b>Firebase</b> (a free Google service built for exactly this — two people editing shared live data). One of you sets it up once, then shares the same code with the other. After that, whatever either of you logs appears on both phones within a second or two, same as the data going in.
+        This uses <b>Firebase</b> (a free Google service built for exactly this — two people editing shared live data). One of you sets it up once, then shares the same code and sign-in with the other. After that, whatever either of you logs appears on both phones within a second or two.
         <ol>
           <li>Go to <a href="https://console.firebase.google.com" target="_blank" rel="noopener">console.firebase.google.com</a> and sign in with a Google account (either of you).</li>
           <li>Click <b>Add project</b>, give it any name (e.g. "Emmy Feeds"), skip Google Analytics.</li>
-          <li>In the left menu, open <b>Build → Realtime Database</b>, click <b>Create Database</b>, pick any region, and start in <b>test mode</b>.</li>
-          <li>Go to <b>Rules</b> in that same Realtime Database section and set both <code>.read</code> and <code>.write</code> to <code>true</code>, then Publish. <i>(This keeps it simple — it means anyone with your exact private database link could read it, but nobody will stumble on it by accident. Fine for a private family tracker.)</i></li>
+          <li>In the left menu, open <b>Build → Realtime Database</b>, click <b>Create Database</b>, pick any region, and start in <b>locked mode</b>.</li>
+          <li>Go to <b>Rules</b> in that same Realtime Database section and set both <code>.read</code> and <code>.write</code> to <code>"auth != null"</code>, then Publish. This means the data can only be read or written by someone signed in — not by anyone who happens to see the config.</li>
+          <li>In the left menu, open <b>Build → Authentication → Get started</b>, enable the <b>Email/Password</b> provider, then go to the <b>Users</b> tab and add one account for you and one for your partner.</li>
           <li>Click the ⚙️ gear next to <b>Project Overview → Project settings</b>, scroll to "Your apps", click the <b>&lt;/&gt; (Web)</b> icon, register the app (any nickname), and it'll show you a code block starting with <code>const firebaseConfig = &#123;...&#125;</code>.</li>
-          <li>Copy that whole block and paste it below, then tap Connect. Do this on your partner's phone too, pasting the <b>same</b> config — that's what links you together.</li>
+          <li>Copy that whole block and paste it below, tap Connect, then sign in with the account you just created. Do this on your partner's phone too, pasting the <b>same</b> config and signing in with their own account — that's what links you together.</li>
         </ol>
       </div>
 
@@ -2008,8 +2074,29 @@ function renderSyncModal() {
 
       <div class="sync-actions">
         <button class="sync-connect-btn tap" data-action="connect-sync">Connect</button>
-        ${state.syncConnected ? `<button class="sync-disconnect-btn tap" data-action="disconnect-sync">Disconnect</button>` : ""}
+        ${state.syncConnected || state.authUser ? `<button class="sync-disconnect-btn tap" data-action="disconnect-sync">Disconnect</button>` : ""}
       </div>
+
+      ${typeof firebase !== "undefined" && firebase.apps && firebase.apps.length ? (
+        state.authUser ? `
+          <div class="settings-divider"></div>
+          <div class="settings-section-title heading">🔒 Signed in</div>
+          <div class="sync-steps" style="margin-bottom:10px;">Signed in as <b>${esc(state.authUser)}</b>.</div>
+          <div class="sync-actions">
+            <button class="sync-disconnect-btn tap" data-action="auth-signout">Sign Out</button>
+          </div>
+        ` : `
+          <div class="settings-divider"></div>
+          <div class="settings-section-title heading">🔒 Sign in to sync</div>
+          <div class="sync-steps" style="margin-bottom:10px;">Config connected — sign in with the account created in step 5 to start syncing.</div>
+          <input type="email" data-field="authEmail" value="${esc(state.authEmail)}" placeholder="Email" style="width:100%; padding:10px; border-radius:12px; border:1.5px solid var(--line); font-size:14px; margin-bottom:8px;" />
+          <input type="password" data-field="authPassword" value="${esc(state.authPassword)}" placeholder="Password" style="width:100%; padding:10px; border-radius:12px; border:1.5px solid var(--line); font-size:14px;" />
+          ${state.authErrorMsg ? `<div style="color:#E85D5D; font-size:12.5px; font-weight:700; margin-top:8px;">${esc(state.authErrorMsg)}</div>` : ""}
+          <div class="sync-actions">
+            <button class="sync-connect-btn tap" data-action="auth-signin">Sign In</button>
+          </div>
+        `
+      ) : ""}
     </div>
   </div>`;
 }
@@ -2606,6 +2693,10 @@ function attachInputListeners() {
         state.weightKgInput = e.target.value;
       } else if (el.dataset.field === "weightNoteInput") {
         state.weightNoteInput = e.target.value;
+      } else if (el.dataset.field === "authEmail") {
+        state.authEmail = e.target.value;
+      } else if (el.dataset.field === "authPassword") {
+        state.authPassword = e.target.value;
       } else {
         state.form[el.dataset.field] = e.target.value;
       }
@@ -2732,6 +2823,12 @@ document.addEventListener("click", (e) => {
     case "disconnect-sync":
       disconnectSync();
       render();
+      break;
+    case "auth-signin":
+      handleSyncSignIn();
+      break;
+    case "auth-signout":
+      handleSyncSignOut();
       break;
     case "shift-month": {
       const delta = Number(btn.dataset.delta);

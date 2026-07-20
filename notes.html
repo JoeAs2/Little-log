@@ -151,6 +151,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
 <script>
   let dbRef = null;
@@ -174,9 +175,26 @@
       firebase.apps.forEach(a => a.delete());
     }
     firebase.initializeApp(config);
+
+    document.getElementById("status").innerText = "Signing in…";
+
+    // Data listener only attaches once Firebase Auth confirms a signed-in user.
+    // This shares the same-origin auth session started on the homepage.
+    firebase.auth().onAuthStateChanged(function (user) {
+      if (user) {
+        bindNotebooksRef();
+      } else {
+        if (dbRef) { try { dbRef.off(); } catch (e) {} }
+        dbRef = null;
+        document.getElementById("status").innerText = "Signed out — open from the homepage";
+      }
+    });
+  }
+
+  function bindNotebooksRef() {
     const db = firebase.database();
     dbRef = db.ref("notebooks");
-    
+
     document.getElementById("status").innerText = "Connected & Synced 🟢";
 
     dbRef.on("value", snapshot => {
@@ -190,6 +208,8 @@
       } else if (Object.keys(notebooks).length > 0) {
         selectNotebook(Object.keys(notebooks)[0]);
       }
+    }, err => {
+      document.getElementById("status").innerText = "Sync error";
     });
   }
 
